@@ -69,6 +69,7 @@
 }
 
 :root {
+  --header-height: calc(var(--spacing) * 12 + 1px);
   --radius: 0.5rem;
   --background: oklch(0.9900 0 0);
   --foreground: oklch(0 0 0);
@@ -185,7 +186,7 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-secondary text-foreground;
     letter-spacing: var(--tracking-normal);
   }
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { SiteHeader } from '@/components/site-header'
 import './globals.css'
 
 const geistSans = Geist({
@@ -34,7 +35,10 @@ export default function RootLayout({
           enableSystem={true}
           disableTransitionOnChange={true}
         >
-          {children}
+          <div className="bg-background relative flex flex-1 flex-col md:m-2 md:rounded-xl">
+            <SiteHeader />
+            <div className="flex flex-1 flex-col">{children}</div>
+          </div>
         </ThemeProvider>
       </body>
     </html>
