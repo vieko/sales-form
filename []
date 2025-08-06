@@ -30,27 +30,19 @@ export function SalesForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="mb-2 text-center text-2xl">
-          Talk to our Sales team.
-        </CardTitle>
-        <CardDescription className="align-center flex flex-col justify-center gap-4">
-          <div className="text-center text-balance">
-            <strong className="text-foreground font-semibold">
-              Get a custom demo.
-            </strong>{' '}
-            Discover the value of Vercel for your enterprise and explore our
-            custom plans and pricing.
+        <CardTitle className="text-xl">Talk to our Sales team.</CardTitle>
+        <CardDescription className="flex flex-col justify-center gap-4 md:flex-row md:justify-start md:gap-16 lg:flex-col lg:gap-4">
+          <div className="text-balance">
+            <strong>Get a custom demo.</strong> Discover the value of Vercel for
+            your enterprise and explore our custom plans and pricing.
           </div>
-          <div className="text-center text-balance">
-            <strong className="text-foreground font-semibold">
-              Set up your Enterprise trial.
-            </strong>{' '}
-            See for yourself how Vercel Enterprise speeds up your workflow &amp;
-            impact.
+          <div className="text-balance">
+            <strong>Set up your Enterprise trial.</strong> See for yourself how
+            Vercel Enterprise speeds up your workflow &amp; impact.
           </div>
         </CardDescription>
       </CardHeader>
-      <CardContent className="mt-6 flex flex-col gap-6">
+      <CardContent className="flex flex-col gap-6">
         <div className="flex flex-col gap-3">
           <Label htmlFor="company-email">Company email</Label>
           <Input
@@ -104,7 +96,7 @@ export function SalesForm() {
             rows={6}
             id="how-can-we-help"
             placeholder="Tell us about your company, team size, and how we can help you get started."
-            className="min-h-48 text-sm"
+            className="min-h-28 text-sm"
           />
         </div>
       </CardContent>
