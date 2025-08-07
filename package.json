@@ -12,7 +12,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "ai:prompt": "tsx src/app/api/test/route.ts",
+    "ai:prompt": "tsx src/app/api/test/agent.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"
   },
