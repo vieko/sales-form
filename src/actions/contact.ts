@@ -1,16 +1,19 @@
 'use server'
 
+import { z } from 'zod'
 import { contactSchema } from '@/lib/validations/contact'
 import type { ActionResponse } from '@/types/contact'
 
-function formDataToObject(formData: FormData): Record<string, string | boolean> {
+function formDataToObject(
+  formData: FormData,
+): Record<string, string | boolean> {
   const entries = Object.fromEntries(formData)
-  
+
   const fieldMapping: Record<string, string> = {
     'company-email': 'companyEmail',
     'contact-name': 'contactName',
     'contact-phone': 'contactPhone',
-    'country': 'country',
+    country: 'country',
     'company-website': 'companyWebsite',
     'company-size': 'companySize',
     'product-interest': 'productInterest',
@@ -19,14 +22,15 @@ function formDataToObject(formData: FormData): Record<string, string | boolean> 
   }
 
   const result: Record<string, string | boolean> = {}
-  
+
   for (const [kebabKey, value] of Object.entries(entries)) {
     const camelKey = fieldMapping[kebabKey]
     if (camelKey) {
-      result[camelKey] = camelKey === 'privacyPolicy' ? value === 'on' : value as string
+      result[camelKey] =
+        camelKey === 'privacyPolicy' ? value === 'on' : (value as string)
     }
   }
-  
+
   return result
 }
 
@@ -44,7 +48,11 @@ export async function submitContact(
       return {
         success: false,
         message: 'Please fix the errors in the form',
-        errors: validatedData.error.flatten().fieldErrors,
+        errors: Object.fromEntries(
+          Object.entries(
+            z.treeifyError(validatedData.error).properties || {},
+          ).map(([key, value]) => [key, value?.errors || []]),
+        ),
       }
     }
 
