@@ -20,14 +20,14 @@ const agent = async (prompt: string) => {
         process.stdout.write(chunk.text)
       }
       if (chunk.type === 'tool-call') {
-        console.log('tool call', chunk)
+        console.log('==> tool call', chunk)
       }
       if (chunk.type === 'tool-result') {
-        console.log('tool result', chunk)
+        console.log('==> tool result', chunk)
       }
     }
   } catch (error) {
-    console.error('Agent Error:', error)
+    console.error('==> agent error', error)
   }
 }
 
