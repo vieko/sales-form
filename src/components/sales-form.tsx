@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, startTransition, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useActionState } from 'react'
@@ -40,6 +40,7 @@ import { countries } from '@/lib/countries'
 import { products } from '@/lib/products'
 import { sizes } from '@/lib/sizes'
 import { isValidEmail } from '@/lib/utils'
+import { logger } from '@/lib/logger'
 
 const initialState = {
   success: false,
@@ -69,10 +70,14 @@ export function SalesForm() {
   const emailValue = form.watch('companyEmail')
   const countryValue = form.watch('country')
 
-  // Determine field visibility
-  const showNameAndPhone = isValidEmail(emailValue)
-  const showWebsiteAndSize = countryValue.length > 0
-  const showPrivacy = countryValue.length > 0 && countryValue !== 'US'
+  // Determine field visibility with memoization to prevent unnecessary re-renders
+  const showNameAndPhone = useMemo(() => {
+    // Only validate if email has at least @ symbol to avoid constant validation
+    return emailValue.includes('@') && isValidEmail(emailValue)
+  }, [emailValue])
+  
+  const showWebsiteAndSize = useMemo(() => countryValue.length > 0, [countryValue])
+  const showPrivacy = useMemo(() => countryValue.length > 0 && countryValue !== 'US', [countryValue])
 
   // Sync server errors back to the form
   useEffect(() => {
@@ -89,6 +94,9 @@ export function SalesForm() {
   }, [state?.errors, form])
 
   const onSubmit = (data: ContactValues) => {
+    // Log form submission
+    logger.info('Form submission started', data)
+    
     // Convert form data to FormData with proper field name mapping (camelCase to kebab-case)
     const formData = new FormData()
     formData.append('company-email', data.companyEmail)
@@ -101,7 +109,9 @@ export function SalesForm() {
     formData.append('how-can-we-help', data.howCanWeHelp)
     formData.append('privacy-policy', data.privacyPolicy ? 'on' : '')
     
-    action(formData)
+    startTransition(() => {
+      action(formData)
+    })
   }
 
   return (

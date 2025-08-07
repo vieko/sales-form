@@ -1,4 +1,6 @@
 import { SalesForm } from '@/components/sales-form'
+import { Console } from '@/components/console'
+
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
@@ -6,7 +8,9 @@ export default function Home() {
         <div className="bg-muted/50 rounded-xl p-4">
           <SalesForm />
         </div>
-        <div className="bg-muted/50 rounded-xl p-4">LOGS</div>
+        <div className="bg-muted/50 rounded-xl p-4">
+          <Console />
+        </div>
       </div>
     </div>
   )

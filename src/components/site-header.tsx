@@ -14,7 +14,7 @@ export function SiteHeader() {
           orientation="vertical"
           className="mx-2 data-[orientation=vertical]:h-4"
         />
-        <h1 className="text-base font-medium">sales form</h1>
+        <h1 className="text-base font-medium">contact sales form</h1>
         <div className="-mr-2 ml-auto flex items-center">
           <ModeToggle />
         </div>
