@@ -1,13 +1,11 @@
 'use client'
 
-import Link from 'next/link'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
@@ -20,12 +18,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import Link from 'next/link'
+import { useActionState } from 'react'
 
+import { submitContact } from '@/actions/contact'
 import { countries } from '@/lib/countries'
 import { products } from '@/lib/products'
 
+const initialState = {
+  success: false,
+  message: '',
+  errors: undefined,
+}
+
 export function SalesForm() {
+  const [state, action, isPending] = useActionState(submitContact, initialState)
   return (
     <Card>
       <CardHeader>
@@ -50,27 +59,47 @@ export function SalesForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form action="" className="mt-6 flex flex-col gap-6">
+        <form action={action} className="mt-6 flex flex-col gap-6">
           <div className="flex flex-col gap-3">
             <Label htmlFor="company-email">Company email</Label>
             <Input
               id="company-email"
+              name="company-email"
               type="email"
               placeholder="Your email address"
-              className="text-sm"
+              aria-describedby="company-email-error"
+              className={cn(
+                'text-sm',
+                state?.errors?.companyEmail && 'border-destructive',
+              )}
               required
             />
+            {state?.errors?.companyEmail && (
+              <p id="company-email-error" className="text-destructive">
+                {state.errors.companyEmail}
+              </p>
+            )}
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-3">
               <Label htmlFor="contact-name">Your name</Label>
               <Input
-                id="contat-name"
+                id="contact-name"
+                name="contact-name"
                 type="text"
                 placeholder="Jody Smith"
-                className="text-sm"
+                aria-describedby="contact-name-error"
+                className={cn(
+                  'text-sm',
+                  state?.errors?.contactName && 'border-destructive',
+                )}
                 required
               />
+              {state?.errors?.contactName && (
+                <p id="contact-name-error" className="text-destructive">
+                  {state.errors.contactName}
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-3">
               <Label htmlFor="contact-phone">
@@ -79,18 +108,32 @@ export function SalesForm() {
               </Label>
               <Input
                 id="contact-phone"
+                name="contact-phone"
                 type="tel"
                 placeholder="(201) 555-0123"
-                className="text-sm"
+                aria-describedby="contact-phone-error"
+                className={cn(
+                  'text-sm',
+                  state?.errors?.contactPhone && 'border-destructive',
+                )}
               />
+              {state?.errors?.contactPhone && (
+                <p id="contact-phone-error" className="text-destructive">
+                  {state.errors.contactPhone}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex flex-col gap-3">
             <Label htmlFor="country">Country</Label>
-            <Select required>
+            <Select name="country" required>
               <SelectTrigger
                 id="country"
-                className="w-full [&_span]:!block [&_span]:truncate"
+                aria-describedby="country-error"
+                className={cn(
+                  'w-full [&_span]:!block [&_span]:truncate',
+                  state?.errors?.country && 'border-destructive',
+                )}
                 aria-label="Select your country"
               >
                 <SelectValue placeholder="Select your country" />
@@ -103,13 +146,22 @@ export function SalesForm() {
                 ))}
               </SelectContent>
             </Select>
+            {state?.errors?.country && (
+              <p id="country-error" className="text-destructive">
+                {state.errors.country}
+              </p>
+            )}
           </div>
           <div className="flex flex-col gap-3">
             <Label htmlFor="product-interest">Primary product interest</Label>
-            <Select required>
+            <Select name="product-interest" required>
               <SelectTrigger
                 id="product-interest"
-                className="w-full [&_span]:!block [&_span]:truncate"
+                aria-describedby="product-interest-error"
+                className={cn(
+                  'w-full [&_span]:!block [&_span]:truncate',
+                  state?.errors?.productInterest && 'border-destructive',
+                )}
                 aria-label="Select a product"
               >
                 <SelectValue placeholder="Select a product" />
@@ -122,16 +174,31 @@ export function SalesForm() {
                 ))}
               </SelectContent>
             </Select>
+            {state?.errors?.productInterest && (
+              <p id="product-interest-error" className="text-destructive">
+                {state.errors.productInterest}
+              </p>
+            )}
           </div>
           <div className="flex flex-col gap-3">
             <Label htmlFor="how-can-we-help">How can we help?</Label>
             <Textarea
               rows={6}
               id="how-can-we-help"
+              name="how-can-we-help"
               placeholder="Tell us about your company, team size, and how we can help you get started."
-              className="min-h-48 text-sm"
+              aria-describedby="how-can-we-help-error"
+              className={cn(
+                'min-h-48 text-sm',
+                state?.errors?.howCanWeHelp && 'border-destructive',
+              )}
               required
             />
+            {state?.errors?.howCanWeHelp && (
+              <p id="how-can-we-help-error" className="text-destructive">
+                {state.errors.howCanWeHelp}
+              </p>
+            )}
           </div>
           <div className="flex items-center justify-between gap-4 rounded border px-6 py-6">
             <Label
@@ -155,17 +222,27 @@ export function SalesForm() {
             </Label>
             <Switch
               id="privacy-policy"
+              name="privacy-policy"
               defaultChecked={false}
               aria-label="Privacy Policy"
+              aria-describedby="privacy-policy-error"
             />
+            {state?.errors?.privacyPolicy && (
+              <p id="privacy-policy-error" className="text-destructive">
+                {state.errors.privacyPolicy}
+              </p>
+            )}
           </div>
+          <Button
+            type="submit"
+            size="default"
+            className="w-full rounded-full"
+            disabled={isPending}
+          >
+            {isPending ? 'Submitting...' : 'Talk to Vercel'}
+          </Button>
         </form>
       </CardContent>
-      <CardFooter>
-        <Button size="default" className="w-full rounded-full">
-          Talk to Vercel
-        </Button>
-      </CardFooter>
     </Card>
   )
 }
