@@ -7,7 +7,6 @@ import { useActionState } from 'react'
 import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
 
-
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -40,7 +39,6 @@ import { contactSchema, type ContactValues } from '@/lib/validations/contact'
 import { countries } from '@/lib/countries'
 import { products } from '@/lib/products'
 import { sizes } from '@/lib/sizes'
-import { isValidEmail } from '@/lib/utils'
 import { logger } from '@/lib/logger'
 
 const initialState = {
@@ -51,7 +49,7 @@ const initialState = {
 
 export function SalesForm() {
   const [state, action, isPending] = useActionState(submitContact, initialState)
-  
+
   const form = useForm<ContactValues>({
     resolver: zodResolver(contactSchema),
     defaultValues: {
@@ -73,12 +71,21 @@ export function SalesForm() {
 
   // Determine field visibility with memoization to prevent unnecessary re-renders
   const showNameAndPhone = useMemo(() => {
-    // Simple check: must have @ and . with characters between
-    return emailValue.includes('@') && emailValue.includes('.') && emailValue.length > 5
+    return (
+      emailValue.includes('@') &&
+      emailValue.includes('.') &&
+      emailValue.length > 5
+    )
   }, [emailValue])
-  
-  const showWebsiteAndSize = useMemo(() => countryValue.length > 0, [countryValue])
-  const showPrivacy = useMemo(() => countryValue.length > 0 && countryValue !== 'US', [countryValue])
+
+  const showWebsiteAndSize = useMemo(
+    () => countryValue.length > 0,
+    [countryValue],
+  )
+  const showPrivacy = useMemo(
+    () => countryValue.length > 0 && countryValue !== 'US',
+    [countryValue],
+  )
 
   // Sync server errors back to the form and log responses
   useEffect(() => {
@@ -107,7 +114,7 @@ export function SalesForm() {
 
   const onSubmit = (data: ContactValues) => {
     logger.info('Form validation passed, preparing submission')
-    
+
     // Convert form data to FormData with proper field name mapping (camelCase to kebab-case)
     const formData = new FormData()
     formData.append('company-email', data.companyEmail)
@@ -119,9 +126,9 @@ export function SalesForm() {
     formData.append('product-interest', data.productInterest)
     formData.append('how-can-we-help', data.howCanWeHelp)
     formData.append('privacy-policy', data.privacyPolicy ? 'on' : '')
-    
+
     logger.info('Submitting form to server...')
-    
+
     startTransition(() => {
       action(formData)
     })
@@ -152,9 +159,9 @@ export function SalesForm() {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form 
+          <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className={`mt-6 flex flex-col gap-6 ${isPending ? 'opacity-50 pointer-events-none' : ''}`}
+            className={`mt-6 flex flex-col gap-6 ${isPending ? 'pointer-events-none opacity-50' : ''}`}
           >
             <FormField
               control={form.control}
@@ -174,7 +181,7 @@ export function SalesForm() {
                 </FormItem>
               )}
             />
-            
+
             {showNameAndPhone && (
               <div className="grid gap-4 sm:grid-cols-2 sm:items-stretch">
                 <FormField
@@ -191,13 +198,13 @@ export function SalesForm() {
                           {...field}
                         />
                       </FormControl>
-                      <div className="flex-1 flex items-end">
+                      <div className="flex flex-1 items-end">
                         <FormMessage />
                       </div>
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="contactPhone"
@@ -205,7 +212,9 @@ export function SalesForm() {
                     <FormItem className="flex flex-col">
                       <FormLabel>
                         Phone number{' '}
-                        <span className="text-muted-foreground">(Optional)</span>
+                        <span className="text-muted-foreground">
+                          (Optional)
+                        </span>
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -215,7 +224,7 @@ export function SalesForm() {
                           {...field}
                         />
                       </FormControl>
-                      <div className="flex-1 flex items-end">
+                      <div className="flex flex-1 items-end">
                         <FormMessage />
                       </div>
                     </FormItem>
@@ -230,7 +239,10 @@ export function SalesForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Country</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger className="w-full [&_span]:!block [&_span]:truncate">
                         <SelectValue placeholder="Select your country" />
@@ -265,20 +277,23 @@ export function SalesForm() {
                           {...field}
                         />
                       </FormControl>
-                      <div className="flex-1 flex items-end">
+                      <div className="flex flex-1 items-end">
                         <FormMessage />
                       </div>
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="companySize"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>Company size</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger className="w-full [&_span]:!block [&_span]:truncate">
                             <SelectValue placeholder="Select your company size" />
@@ -292,7 +307,7 @@ export function SalesForm() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <div className="flex-1 flex items-end">
+                      <div className="flex flex-1 items-end">
                         <FormMessage />
                       </div>
                     </FormItem>
@@ -307,7 +322,10 @@ export function SalesForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Primary product interest</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger className="w-full [&_span]:!block [&_span]:truncate">
                         <SelectValue placeholder="Select a product" />
@@ -355,8 +373,8 @@ export function SalesForm() {
                       <FormLabel className="flex flex-col items-start">
                         <span>Privacy Policy</span>
                         <span className="text-muted-foreground leading-snug font-normal">
-                          Yes, I agree to receive marketing communications from Vercel as
-                          described in your{' '}
+                          Yes, I agree to receive marketing communications from
+                          Vercel as described in your{' '}
                           <Link
                             href="https://vercel.com/legal/privacy-policy"
                             className="text-foreground hover:underline"
@@ -364,8 +382,8 @@ export function SalesForm() {
                           >
                             Privacy Policy
                           </Link>
-                          . I can withdraw my consent at any time by clicking the
-                          unsubscribe link in the emails.
+                          . I can withdraw my consent at any time by clicking
+                          the unsubscribe link in the emails.
                         </span>
                       </FormLabel>
                       <FormControl>
