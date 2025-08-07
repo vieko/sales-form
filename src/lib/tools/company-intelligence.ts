@@ -49,7 +49,7 @@ export const companyIntelligence = tool({
         content: result.text?.slice(0, 800) || '',
         publishedDate: result.publishedDate,
         score: result.score,
-        highlights: result.highlights || []
+        highlights: []
       }))
     } catch (error) {
       console.error('Company intelligence search failed:', error)

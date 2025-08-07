@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 
 import { submitContact } from '@/actions/contact'
 import { contactSchema, type ContactValues } from '@/lib/validations/contact'
@@ -62,6 +63,7 @@ export function SalesForm() {
       productInterest: '',
       howCanWeHelp: '',
       privacyPolicy: false,
+      mockBehavioralData: false,
     },
   })
 
@@ -126,6 +128,7 @@ export function SalesForm() {
     formData.append('product-interest', data.productInterest)
     formData.append('how-can-we-help', data.howCanWeHelp)
     formData.append('privacy-policy', data.privacyPolicy ? 'on' : '')
+    formData.append('mock-behavioral-data', data.mockBehavioralData ? 'on' : '')
 
     logger.info('Submitting form to server...')
 
@@ -361,9 +364,33 @@ export function SalesForm() {
                   <FormMessage />
                 </FormItem>
               )}
-            />
+              />
 
-            {showPrivacy && (
+              <FormField
+            control={form.control}
+            name="mockBehavioralData"
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex items-center justify-between gap-4 rounded border px-6 py-4">
+                  <FormLabel className="flex flex-col items-start">
+                    <span className="text-sm font-medium">Mock Behavioral Data</span>
+                    <span className="text-muted-foreground text-xs font-normal leading-snug">
+                      Enable mock engagement data (page views, downloads, email interactions) for POC demonstration
+                    </span>
+                  </FormLabel>
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {showPrivacy && (
               <FormField
                 control={form.control}
                 name="privacyPolicy"

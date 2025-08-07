@@ -1,13 +1,9 @@
 import { openai } from '@ai-sdk/openai'
-import { generateObject, streamText } from 'ai'
+import { generateObject } from 'ai'
 import { z } from 'zod'
 import { getPrompt } from '@/lib/prompts'
-import {
-  companyIntelligence,
-  websiteAnalysis,
-  competitiveIntelligence,
-  intentAnalysis
-} from '@/lib/tools'
+// Tools imported for potential future use in AI SDK workflow
+// Currently using direct API calls for POC simplicity
 
 // Lead enrichment result schema
 const enrichmentResultSchema = z.object({
@@ -40,10 +36,10 @@ const enrichmentResultSchema = z.object({
     followUpTimeline: z.string()
   }),
   enrichmentData: z.object({
-    companyIntelligence: z.any().optional(),
-    websiteAnalysis: z.any().optional(),
-    competitiveIntelligence: z.any().optional(),
-    intentAnalysis: z.any().optional()
+  companyIntelligence: z.unknown().optional(),
+  websiteAnalysis: z.unknown().optional(),
+  competitiveIntelligence: z.unknown().optional(),
+  intentAnalysis: z.unknown().optional()
   })
 })
 
@@ -77,7 +73,7 @@ export class LeadEnrichmentAgent {
   /**
    * Enrich a lead with comprehensive analysis and scoring
    */
-  async enrichLead(leadData: LeadData, onProgress?: (step: string, data?: any) => void): Promise<EnrichmentResult> {
+  async enrichLead(leadData: LeadData, onProgress?: (step: string, data?: unknown) => void): Promise<EnrichmentResult> {
     try {
       onProgress?.('Starting lead enrichment analysis...')
 
@@ -186,32 +182,198 @@ export class LeadEnrichmentAgent {
   }
 
   private async gatherCompanyIntelligence(companyName: string, domain: string) {
-    return await companyIntelligence.execute({ 
-      company: domain || companyName,
-      focus: 'general'
-    })
+    try {
+      // For POC: Call the underlying exa API directly
+      const { exa } = await import('@/lib/exa')
+      const company = domain || companyName
+      const searchQuery = `${company} company news recent developments business`
+      
+      const { results } = await exa.searchAndContents(searchQuery, {
+        type: 'neural',
+        numResults: 5,
+        startPublishedDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+        text: {
+          maxCharacters: 1000,
+          includeHtmlTags: false
+        }
+      })
+
+      return results.map((result) => ({
+        title: result.title,
+        url: result.url,
+        content: result.text?.slice(0, 800) || '',
+        publishedDate: result.publishedDate,
+        score: result.score,
+        highlights: []
+      }))
+    } catch (error) {
+      console.error('Company intelligence failed:', error)
+      return { error: 'Company intelligence failed' }
+    }
   }
 
   private async analyzeWebsite(websiteUrl: string) {
-    return await websiteAnalysis.execute({ 
-      websiteUrl,
-      maxPages: 5
-    })
+    try {
+      // For POC: Return mock website analysis
+      const mockWebsiteData = {
+        url: websiteUrl,
+        pages: [
+          {
+            url: `${websiteUrl}/about`,
+            title: 'About Us',
+            content: 'Mock content about the company mission, team size, and target market...',
+            analysis: {
+              teamSize: 'startup',
+              targetMarket: 'SMB',
+              maturitySignals: ['modern_design', 'testimonials', 'case_studies']
+            }
+          },
+          {
+            url: `${websiteUrl}/pricing`,
+            title: 'Pricing',
+            content: 'Mock pricing information with tiers and costs...',
+            analysis: {
+              hasPublicPricing: true,
+              pricePoints: [29, 99, 299],
+              model: 'subscription'
+            }
+          }
+        ],
+        techStack: ['React', 'TypeScript', 'Vercel', 'Stripe'],
+        overallAnalysis: {
+          websiteMaturity: 'high',
+          targetMarket: 'SMB',
+          pricingModel: 'subscription',
+          businessModel: 'SaaS'
+        }
+      }
+
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      return mockWebsiteData
+    } catch (error) {
+      console.error('Website analysis failed:', error)
+      return { error: 'Website analysis failed' }
+    }
   }
 
   private async gatherCompetitiveIntelligence(companyName: string, industry: string) {
-    return await competitiveIntelligence.execute({
-      company: companyName,
-      industry,
-      focus: 'competitors'
-    })
+    try {
+      // For POC: Return mock competitive intelligence
+      const mockCompetitiveData = {
+        company: companyName,
+        industry,
+        focus: 'competitors',
+        analysis: {
+          marketPosition: 'emerging player',
+          competitorCount: 'high',
+          mainCompetitors: [
+            'Stripe (payments)',
+            'Square (SMB focus)',
+            'PayPal (consumer)'
+          ],
+          competitiveLandscape: {
+            marketLeader: 'Stripe',
+            emergingPlayers: [companyName],
+            marketGrowth: 'high',
+            differentiation: [
+              'focus on SMB market',
+              'simplified onboarding',
+              'industry-specific features'
+            ]
+          },
+          marketInsights: [
+            'Payment processing market growing 15% YoY',
+            'SMB segment underserved by traditional players',
+            'Regulatory changes driving innovation'
+          ]
+        },
+        sources: [
+          'TechCrunch market analysis',
+          'CB Insights competitive map',
+          'Company press releases'
+        ],
+        lastUpdated: new Date().toISOString()
+      }
+
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 800))
+      return mockCompetitiveData
+    } catch (error) {
+      console.error('Competitive intelligence failed:', error)
+      return { error: 'Competitive intelligence failed' }
+    }
   }
 
   private async analyzeIntent(howCanWeHelpText: string, companyContext: string) {
-    return await intentAnalysis.execute({
-      howCanWeHelpText,
-      companyContext
-    })
+    try {
+      // Use GPT-4 for intent analysis - this actually works with AI SDK
+      const result = await generateObject({
+        model: openai('gpt-4o'),
+        system: `You are an expert sales development representative analyzing prospect intent.
+        
+        Analyze the provided text for buying signals and intent indicators:
+        
+        HIGH URGENCY signals:
+        - Time pressure ("ASAP", "urgent", "immediately", "this quarter")
+        - Problems causing pain ("losing customers", "inefficient", "breaking")
+        - Competitive threats ("considering alternatives", "evaluating options")
+        
+        BUDGET signals:
+        - Direct mentions ("budget allocated", "willing to invest", "price range")
+        - Indirect hints ("ROI focused", "cost-effective", "value proposition")
+        
+        BUYING STAGE indicators:
+        - Awareness: General research, learning, understanding needs
+        - Consideration: Comparing solutions, evaluating features, ROI analysis  
+        - Decision: Ready to move forward, timeline mentioned, decision criteria
+        
+        DECISION MAKER signals:
+        - Authority language ("I decide", "my team", "we need")
+        - Title implications ("CEO", "CTO", "Director", "VP")
+        - Budget authority ("approved budget", "investment ready")
+        
+        Score 0-100 based on buying readiness and intent strength.`,
+        prompt: `Analyze this prospect's intent:
+        
+        Text: "${howCanWeHelpText}"
+        ${companyContext ? `Company Context: "${companyContext}"` : ''}
+        
+        Provide detailed intent analysis with specific reasoning.`,
+        schema: z.object({
+          urgency: z.enum(['low', 'medium', 'high']).describe('Urgency level based on language used'),
+          budgetMentioned: z.boolean().describe('Whether budget/pricing concerns are mentioned'),
+          buyingStage: z.enum(['awareness', 'consideration', 'decision']).describe('Buying stage indicators'),
+          painPoints: z.array(z.string()).describe('Identified pain points or challenges'),
+          timeline: z.string().describe('Mentioned or implied timeline for implementation'),
+          decisionMakers: z.boolean().describe('Whether decision makers are mentioned or implied'),
+          keywords: z.array(z.string()).describe('Key intent keywords found'),
+          sentiment: z.enum(['positive', 'neutral', 'negative']).describe('Overall sentiment'),
+          intentScore: z.number().min(0).max(100).describe('Intent score based on analysis'),
+          reasoning: z.string().describe('Explanation of the intent analysis')
+        }),
+        temperature: 0.2
+      })
+
+      return result.object
+    } catch (error) {
+      console.error('Intent analysis failed:', error)
+      return { 
+        error: 'Intent analysis failed',
+        fallback: {
+          urgency: 'medium' as const,
+          budgetMentioned: false,
+          buyingStage: 'consideration' as const,
+          painPoints: [],
+          timeline: 'unknown',
+          decisionMakers: false,
+          keywords: [],
+          sentiment: 'neutral' as const,
+          intentScore: 50,
+          reasoning: 'Analysis failed, using fallback values'
+        }
+      }
+    }
   }
 
   private extractDomain(urlOrEmail: string): string {
@@ -237,7 +399,7 @@ export class LeadEnrichmentAgent {
     return companyPart.charAt(0).toUpperCase() + companyPart.slice(1)
   }
 
-  private buildAnalysisPrompt(leadData: LeadData, enrichmentData: any): string {
+  private buildAnalysisPrompt(leadData: LeadData, enrichmentData: unknown): string {
     return `Analyze this lead for scoring and classification:
 
 ## Lead Information

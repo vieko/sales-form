@@ -33,6 +33,7 @@ export const contactSchema = z.object({
       'Please provide at least 20 characters describing how we can help',
     ),
   privacyPolicy: z.boolean().optional(),
+  mockBehavioralData: z.boolean().optional(),
 })
 
 export type ContactValues = z.infer<typeof contactSchema>

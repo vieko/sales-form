@@ -6,6 +6,7 @@ import type { ActionResponse } from '@/types/contact'
 import { db } from '@/db/drizzle'
 import { salesFormSubmissions } from '@/db/schemas'
 import { headers } from 'next/headers'
+import { enrichLeadWithConsoleUpdates } from './lead-enrichment'
 
 function formDataToObject(
   formData: FormData,
@@ -22,6 +23,7 @@ function formDataToObject(
     'product-interest': 'productInterest',
     'how-can-we-help': 'howCanWeHelp',
     'privacy-policy': 'privacyPolicy',
+    'mock-behavioral-data': 'mockBehavioralData',
   }
 
   const result: Record<string, string | boolean> = {}
@@ -30,7 +32,9 @@ function formDataToObject(
     const camelKey = fieldMapping[kebabKey]
     if (camelKey) {
       result[camelKey] =
-        camelKey === 'privacyPolicy' ? value === 'on' : (value as string)
+        camelKey === 'privacyPolicy' || camelKey === 'mockBehavioralData' 
+          ? value === 'on' 
+          : (value as string)
     }
   }
 
@@ -70,6 +74,12 @@ export async function submitContact(
       ipAddress,
       userAgent,
     }).returning()
+
+    // Trigger lead enrichment in the background (fire and forget for POC)
+    // In production, this would use a proper queue system like Inngest
+    enrichLeadWithConsoleUpdates(formData).catch(error => {
+      console.error('Background enrichment failed:', error)
+    })
 
     return {
       success: true,

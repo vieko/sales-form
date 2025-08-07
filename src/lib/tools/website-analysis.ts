@@ -20,7 +20,7 @@ export const websiteAnalysis = tool({
     websiteUrl: z.string().url().describe('Full website URL to analyze'),
     maxPages: z.number().min(1).max(10).describe('Maximum pages to crawl').default(5),
   }),
-  execute: async ({ websiteUrl, maxPages }) => {
+  execute: async ({ websiteUrl }) => {
     try {
       // For POC: Mock Firecrawl integration since we need API key setup
       // In production, would use actual Firecrawl API
