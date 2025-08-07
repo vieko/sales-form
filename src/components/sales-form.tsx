@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useActionState } from 'react'
 import Link from 'next/link'
+import { Loader2 } from 'lucide-react'
 
 
 import { Button } from '@/components/ui/button'
@@ -72,8 +73,8 @@ export function SalesForm() {
 
   // Determine field visibility with memoization to prevent unnecessary re-renders
   const showNameAndPhone = useMemo(() => {
-    // Only validate if email has at least @ symbol to avoid constant validation
-    return emailValue.includes('@') && isValidEmail(emailValue)
+    // Simple check: must have @ and . with characters between
+    return emailValue.includes('@') && emailValue.includes('.') && emailValue.length > 5
   }, [emailValue])
   
   const showWebsiteAndSize = useMemo(() => countryValue.length > 0, [countryValue])
@@ -151,7 +152,10 @@ export function SalesForm() {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="mt-6 flex flex-col gap-6">
+          <form 
+            onSubmit={form.handleSubmit(onSubmit)}
+            className={`mt-6 flex flex-col gap-6 ${isPending ? 'opacity-50 pointer-events-none' : ''}`}
+          >
             <FormField
               control={form.control}
               name="companyEmail"
@@ -384,7 +388,14 @@ export function SalesForm() {
               className="w-full rounded-full"
               disabled={isPending}
             >
-              {isPending ? 'Submitting...' : 'Talk to Vercel'}
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                'Talk to Vercel'
+              )}
             </Button>
           </form>
         </Form>
