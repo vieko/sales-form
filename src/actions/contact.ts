@@ -1,19 +1,34 @@
 'use server'
 
-import { z } from 'zod'
-import type { ContactFormData, ActionResponse } from '@/types/contact'
+import { contactSchema } from '@/lib/validations/contact'
+import type { ActionResponse } from '@/types/contact'
 
-const contactSchema = z.object({
-  companyEmail: z.email(),
-  contactName: z.string(),
-  contactPhone: z.string().optional(),
-  country: z.string(),
-  companyWebsite: z.url(),
-  companySize: z.string(),
-  productInterest: z.string(),
-  howCanWeHelp: z.string(),
-  privacyPolicy: z.boolean(),
-})
+function formDataToObject(formData: FormData): Record<string, string | boolean> {
+  const entries = Object.fromEntries(formData)
+  
+  const fieldMapping: Record<string, string> = {
+    'company-email': 'companyEmail',
+    'contact-name': 'contactName',
+    'contact-phone': 'contactPhone',
+    'country': 'country',
+    'company-website': 'companyWebsite',
+    'company-size': 'companySize',
+    'product-interest': 'productInterest',
+    'how-can-we-help': 'howCanWeHelp',
+    'privacy-policy': 'privacyPolicy',
+  }
+
+  const result: Record<string, string | boolean> = {}
+  
+  for (const [kebabKey, value] of Object.entries(entries)) {
+    const camelKey = fieldMapping[kebabKey]
+    if (camelKey) {
+      result[camelKey] = camelKey === 'privacyPolicy' ? value === 'on' : value as string
+    }
+  }
+  
+  return result
+}
 
 export async function submitContact(
   prevState: ActionResponse,
@@ -22,18 +37,7 @@ export async function submitContact(
   await new Promise((resolve) => setTimeout(resolve, 1000))
 
   try {
-    const rawData: ContactFormData = {
-      companyEmail: formData.get('company-email') as string,
-      contactName: formData.get('contact-name') as string,
-      contactPhone: formData.get('contact-phone') as string,
-      country: formData.get('country') as string,
-      companyWebsite: formData.get('company-website') as string,
-      companySize: formData.get('company-size') as string,
-      productInterest: formData.get('product-interest') as string,
-      howCanWeHelp: formData.get('how-can-we-help') as string,
-      privacyPolicy: formData.get('privacy-policy') === 'on',
-    }
-
+    const rawData = formDataToObject(formData)
     const validatedData = contactSchema.safeParse(rawData)
 
     if (!validatedData.success) {

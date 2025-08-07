@@ -1,6 +1,12 @@
 'use client'
 
-import { cn } from '@/lib/utils'
+import { useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useActionState } from 'react'
+import Link from 'next/link'
+
+
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -9,8 +15,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -20,10 +33,9 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import Link from 'next/link'
-import { useActionState } from 'react'
 
 import { submitContact } from '@/actions/contact'
+import { contactSchema, type ContactValues } from '@/lib/validations/contact'
 import { countries } from '@/lib/countries'
 import { products } from '@/lib/products'
 import { sizes } from '@/lib/sizes'
@@ -36,6 +48,52 @@ const initialState = {
 
 export function SalesForm() {
   const [state, action, isPending] = useActionState(submitContact, initialState)
+  
+  const form = useForm<ContactValues>({
+    resolver: zodResolver(contactSchema),
+    defaultValues: {
+      companyEmail: '',
+      contactName: '',
+      contactPhone: '',
+      country: '',
+      companyWebsite: '',
+      companySize: '',
+      productInterest: '',
+      howCanWeHelp: '',
+      privacyPolicy: false,
+    },
+  })
+
+  // Sync server errors back to the form
+  useEffect(() => {
+    if (state?.errors) {
+      Object.entries(state.errors).forEach(([field, messages]) => {
+        if (messages?.[0]) {
+          form.setError(field as keyof ContactValues, {
+            type: 'server',
+            message: messages[0],
+          })
+        }
+      })
+    }
+  }, [state?.errors, form])
+
+  const onSubmit = (data: ContactValues) => {
+    // Convert form data to FormData with proper field name mapping (camelCase to kebab-case)
+    const formData = new FormData()
+    formData.append('company-email', data.companyEmail)
+    formData.append('contact-name', data.contactName)
+    formData.append('contact-phone', data.contactPhone || '')
+    formData.append('country', data.country)
+    formData.append('company-website', data.companyWebsite || '')
+    formData.append('company-size', data.companySize)
+    formData.append('product-interest', data.productInterest)
+    formData.append('how-can-we-help', data.howCanWeHelp)
+    formData.append('privacy-policy', data.privacyPolicy ? 'on' : '')
+    
+    action(formData)
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -60,239 +118,238 @@ export function SalesForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form action={action} className="mt-6 flex flex-col gap-6">
-          <div className="flex flex-col gap-3">
-            <Label htmlFor="company-email">Company email</Label>
-            <Input
-              id="company-email"
-              name="company-email"
-              type="email"
-              placeholder="Your email address"
-              aria-describedby="company-email-error"
-              className={cn(
-                'text-sm',
-                state?.errors?.companyEmail && 'border-destructive',
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="mt-6 flex flex-col gap-6">
+            <FormField
+              control={form.control}
+              name="companyEmail"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Company email</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      placeholder="Your email address"
+                      className="text-sm"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-              required
             />
-            {state?.errors?.companyEmail && (
-              <p id="company-email-error" className="text-destructive">
-                {state.errors.companyEmail}
-              </p>
-            )}
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="contact-name">Your name</Label>
-              <Input
-                id="contact-name"
-                name="contact-name"
-                type="text"
-                placeholder="Jody Smith"
-                aria-describedby="contact-name-error"
-                className={cn(
-                  'text-sm',
-                  state?.errors?.contactName && 'border-destructive',
-                )}
-                required
-              />
-              {state?.errors?.contactName && (
-                <p id="contact-name-error" className="text-destructive">
-                  {state.errors.contactName}
-                </p>
-              )}
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="contact-phone">
-                Phone number
-                <span className="text-muted-foreground">(Optional)</span>
-              </Label>
-              <Input
-                id="contact-phone"
-                name="contact-phone"
-                type="tel"
-                placeholder="(201) 555-0123"
-                aria-describedby="contact-phone-error"
-                className={cn(
-                  'text-sm',
-                  state?.errors?.contactPhone && 'border-destructive',
+            
+            <div className="grid gap-4 sm:grid-cols-2 sm:items-stretch">
+              <FormField
+                control={form.control}
+                name="contactName"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Your name</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        placeholder="Jody Smith"
+                        className="text-sm"
+                        {...field}
+                      />
+                    </FormControl>
+                    <div className="flex-1 flex items-end">
+                      <FormMessage />
+                    </div>
+                  </FormItem>
                 )}
               />
-              {state?.errors?.contactPhone && (
-                <p id="contact-phone-error" className="text-destructive">
-                  {state.errors.contactPhone}
-                </p>
-              )}
-            </div>
-          </div>
-          <div className="flex flex-col gap-3">
-            <Label htmlFor="country">Country</Label>
-            <Select name="country" required>
-              <SelectTrigger
-                id="country"
-                aria-describedby="country-error"
-                className={cn(
-                  'w-full [&_span]:!block [&_span]:truncate',
-                  state?.errors?.country && 'border-destructive',
+              
+              <FormField
+                control={form.control}
+                name="contactPhone"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>
+                      Phone number{' '}
+                      <span className="text-muted-foreground">(Optional)</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="tel"
+                        placeholder="(201) 555-0123"
+                        className="text-sm"
+                        {...field}
+                      />
+                    </FormControl>
+                    <div className="flex-1 flex items-end">
+                      <FormMessage />
+                    </div>
+                  </FormItem>
                 )}
-                aria-label="Select your country"
-              >
-                <SelectValue placeholder="Select your country" />
-              </SelectTrigger>
-              <SelectContent>
-                {countries.map((country) => (
-                  <SelectItem key={country.value} value={country.value}>
-                    {country.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {state?.errors?.country && (
-              <p id="country-error" className="text-destructive">
-                {state.errors.country}
-              </p>
-            )}
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="company-website">Company website</Label>
-              <Input
-                id="company-website"
-                name="company-website"
-                type="url"
-                placeholder="https://jodysmith.com"
-                aria-describedby="company-website-error"
-                className={cn(
-                  'text-sm',
-                  state?.errors?.companyWebsite && 'border-destructive',
-                )}
-                required
               />
-              {state?.errors?.companyWebsite && (
-                <p id="company-website-error" className="text-destructive">
-                  {state.errors.companyWebsite}
-                </p>
-              )}
             </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="company-size">Company size</Label>
-              <Select name="company-size" required>
-                <SelectTrigger
-                  id="company-size"
-                  aria-describedby="company-size-error"
-                  className={cn(
-                    'w-full [&_span]:!block [&_span]:truncate',
-                    state?.errors?.companySize && 'border-destructive',
-                  )}
-                  aria-label="Select your company size"
-                >
-                  <SelectValue placeholder="Select your company size" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sizes.map((size) => (
-                    <SelectItem key={size.value} value={size.value}>
-                      {size.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {state?.errors?.companySize && (
-                <p id="company-size-error" className="text-destructive">
-                  {state.errors.companySize}
-                </p>
+
+            <FormField
+              control={form.control}
+              name="country"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Country</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="w-full [&_span]:!block [&_span]:truncate">
+                        <SelectValue placeholder="Select your country" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {countries.map((country) => (
+                        <SelectItem key={country.value} value={country.value}>
+                          {country.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
-          </div>
-          <div className="flex flex-col gap-3">
-            <Label htmlFor="product-interest">Primary product interest</Label>
-            <Select name="product-interest" required>
-              <SelectTrigger
-                id="product-interest"
-                aria-describedby="product-interest-error"
-                className={cn(
-                  'w-full [&_span]:!block [&_span]:truncate',
-                  state?.errors?.productInterest && 'border-destructive',
-                )}
-                aria-label="Select a product"
-              >
-                <SelectValue placeholder="Select a product" />
-              </SelectTrigger>
-              <SelectContent>
-                {products.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {state?.errors?.productInterest && (
-              <p id="product-interest-error" className="text-destructive">
-                {state.errors.productInterest}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col gap-3">
-            <Label htmlFor="how-can-we-help">How can we help?</Label>
-            <Textarea
-              rows={6}
-              id="how-can-we-help"
-              name="how-can-we-help"
-              placeholder="Tell us about your company, team size, and how we can help you get started."
-              aria-describedby="how-can-we-help-error"
-              className={cn(
-                'min-h-48 text-sm',
-                state?.errors?.howCanWeHelp && 'border-destructive',
-              )}
-              required
             />
-            {state?.errors?.howCanWeHelp && (
-              <p id="how-can-we-help-error" className="text-destructive">
-                {state.errors.howCanWeHelp}
-              </p>
-            )}
-          </div>
-          <div className="flex items-center justify-between gap-4 rounded border px-6 py-6">
-            <Label
-              htmlFor="privacy-policy"
-              className="flex flex-col items-start"
+
+            <div className="grid gap-4 sm:grid-cols-2 sm:items-stretch">
+              <FormField
+                control={form.control}
+                name="companyWebsite"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Company website</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="url"
+                        placeholder="https://jodysmith.com"
+                        className="text-sm"
+                        {...field}
+                      />
+                    </FormControl>
+                    <div className="flex-1 flex items-end">
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="companySize"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Company size</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full [&_span]:!block [&_span]:truncate">
+                          <SelectValue placeholder="Select your company size" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {sizes.map((size) => (
+                          <SelectItem key={size.value} value={size.value}>
+                            {size.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="flex-1 flex items-end">
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="productInterest"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Primary product interest</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="w-full [&_span]:!block [&_span]:truncate">
+                        <SelectValue placeholder="Select a product" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {products.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="howCanWeHelp"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>How can we help?</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      rows={6}
+                      placeholder="Tell us about your company, team size, and how we can help you get started."
+                      className="min-h-48 text-sm"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="privacyPolicy"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-center justify-between gap-4 rounded border px-6 py-6">
+                    <FormLabel className="flex flex-col items-start">
+                      <span>Privacy Policy</span>
+                      <span className="text-muted-foreground leading-snug font-normal">
+                        Yes, I agree to receive marketing communications from Vercel as
+                        described in your{' '}
+                        <Link
+                          href="https://vercel.com/legal/privacy-policy"
+                          className="text-foreground hover:underline"
+                          target="_blank"
+                        >
+                          Privacy Policy
+                        </Link>
+                        . I can withdraw my consent at any time by clicking the
+                        unsubscribe link in the emails.
+                      </span>
+                    </FormLabel>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        aria-label="Privacy Policy"
+                      />
+                    </FormControl>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button
+              type="submit"
+              size="default"
+              className="w-full rounded-full"
+              disabled={isPending}
             >
-              <span>Privacy Policy</span>
-              <span className="text-muted-foreground leading-snug font-normal">
-                Yes, I agree to receive marketing communications from Vercel as
-                described in your{' '}
-                <Link
-                  href="https://vercel.com/legal/privacy-policy"
-                  className="text-foreground hover:underline"
-                  target="_blank"
-                >
-                  Privacy Policy
-                </Link>
-                . I can withdraw my consent at any time by clicking the
-                unsubscribe link in the emails.
-              </span>
-            </Label>
-            <Switch
-              id="privacy-policy"
-              name="privacy-policy"
-              defaultChecked={false}
-              aria-label="Privacy Policy"
-              aria-describedby="privacy-policy-error"
-            />
-            {state?.errors?.privacyPolicy && (
-              <p id="privacy-policy-error" className="text-destructive">
-                {state.errors.privacyPolicy}
-              </p>
-            )}
-          </div>
-          <Button
-            type="submit"
-            size="default"
-            className="w-full rounded-full"
-            disabled={isPending}
-          >
-            {isPending ? 'Submitting...' : 'Talk to Vercel'}
-          </Button>
-        </form>
+              {isPending ? 'Submitting...' : 'Talk to Vercel'}
+            </Button>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   )
