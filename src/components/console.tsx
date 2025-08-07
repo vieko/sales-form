@@ -56,12 +56,14 @@ export function Console() {
         <ScrollArea className="h-80">
           <div className="space-y-1 p-4">
             {logs.length === 0 ? (
-              <p className="text-muted-foreground text-sm">No logs yet...</p>
+              <p className="text-muted-foreground pl-2 text-sm">
+                No logs yet...
+              </p>
             ) : (
               logs.map((log) => (
                 <div
                   key={log.id}
-                  className="border-muted-foreground/20 border-l-2 pl-2 text-xs font-mono"
+                  className="border-muted-foreground/20 border-l-2 pl-2 font-mono text-xs"
                 >
                   <div className="mb-1 flex items-center gap-2">
                     <span className="text-muted-foreground">
