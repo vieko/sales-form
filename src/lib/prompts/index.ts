@@ -1,7 +1,9 @@
 import { sdrResearchPrompt } from './sdr-research'
+import { leadEnrichmentPrompt } from './lead-enrichment'
 
 export const prompts = {
   sdrResearch: sdrResearchPrompt,
+  leadEnrichment: leadEnrichmentPrompt,
 } as const
 
 export type PromptKey = keyof typeof prompts
