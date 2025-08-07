@@ -3,6 +3,9 @@
 import { z } from 'zod'
 import { contactSchema } from '@/lib/validations/contact'
 import type { ActionResponse } from '@/types/contact'
+import { db } from '@/db/drizzle'
+import { salesFormSubmissions } from '@/db/schemas'
+import { headers } from 'next/headers'
 
 function formDataToObject(
   formData: FormData,
@@ -56,17 +59,44 @@ export async function submitContact(
       }
     }
 
-    console.log('contact data', validatedData.data)
+    // Get client metadata
+    const headersList = await headers()
+    const ipAddress = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown'
+    const userAgent = headersList.get('user-agent') || 'unknown'
+
+    // Insert into database
+    const [submission] = await db.insert(salesFormSubmissions).values({
+      ...validatedData.data,
+      ipAddress,
+      userAgent,
+    }).returning()
 
     return {
       success: true,
-      message: 'Contact form submitted successfully.',
+      message: `Contact form submitted successfully. Submission ID: ${submission.id}`,
     }
   } catch (error) {
-    console.error(error)
+    console.error('Database error:', error)
+    
+    // Handle database-specific errors
+    if (error instanceof Error) {
+      if (error.message.includes('unique constraint')) {
+        return {
+          success: false,
+          message: 'This submission already exists.',
+        }
+      }
+      if (error.message.includes('connection')) {
+        return {
+          success: false,
+          message: 'Database connection failed. Please try again.',
+        }
+      }
+    }
+    
     return {
       success: false,
-      message: 'An unexpected error occurred.',
+      message: 'An unexpected error occurred while saving your submission.',
     }
   }
 }
