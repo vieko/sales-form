@@ -79,7 +79,7 @@ export function SalesForm() {
   const showWebsiteAndSize = useMemo(() => countryValue.length > 0, [countryValue])
   const showPrivacy = useMemo(() => countryValue.length > 0 && countryValue !== 'US', [countryValue])
 
-  // Sync server errors back to the form
+  // Sync server errors back to the form and log responses
   useEffect(() => {
     if (state?.errors) {
       Object.entries(state.errors).forEach(([field, messages]) => {
@@ -93,9 +93,19 @@ export function SalesForm() {
     }
   }, [state?.errors, form])
 
+  // Log form submission responses
+  useEffect(() => {
+    if (state && state.message) {
+      if (state.success) {
+        logger.success(state.message)
+      } else {
+        logger.error(state.message, state.errors)
+      }
+    }
+  }, [state])
+
   const onSubmit = (data: ContactValues) => {
-    // Log form submission
-    logger.info('Form submission started', data)
+    logger.info('Form validation passed, preparing submission')
     
     // Convert form data to FormData with proper field name mapping (camelCase to kebab-case)
     const formData = new FormData()
@@ -108,6 +118,8 @@ export function SalesForm() {
     formData.append('product-interest', data.productInterest)
     formData.append('how-can-we-help', data.howCanWeHelp)
     formData.append('privacy-policy', data.privacyPolicy ? 'on' : '')
+    
+    logger.info('Submitting form to server...')
     
     startTransition(() => {
       action(formData)
