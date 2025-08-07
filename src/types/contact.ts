@@ -7,7 +7,7 @@ export interface ContactFormData {
   companySize: string
   productInterest: string
   howCanWeHelp: string
-  privacyPolicy: boolean
+  privacyPolicy?: boolean
 }
 
 export interface ActionResponse {
