@@ -26,6 +26,7 @@ import { useActionState } from 'react'
 import { submitContact } from '@/actions/contact'
 import { countries } from '@/lib/countries'
 import { products } from '@/lib/products'
+import { sizes } from '@/lib/sizes'
 
 const initialState = {
   success: false,
@@ -151,6 +152,56 @@ export function SalesForm() {
                 {state.errors.country}
               </p>
             )}
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-3">
+              <Label htmlFor="company-website">Company website</Label>
+              <Input
+                id="company-website"
+                name="company-website"
+                type="url"
+                placeholder="https://jodysmith.com"
+                aria-describedby="company-website-error"
+                className={cn(
+                  'text-sm',
+                  state?.errors?.companyWebsite && 'border-destructive',
+                )}
+                required
+              />
+              {state?.errors?.companyWebsite && (
+                <p id="company-website-error" className="text-destructive">
+                  {state.errors.companyWebsite}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col gap-3">
+              <Label htmlFor="company-size">Company size</Label>
+              <Select name="company-size" required>
+                <SelectTrigger
+                  id="company-size"
+                  aria-describedby="company-size-error"
+                  className={cn(
+                    'w-full [&_span]:!block [&_span]:truncate',
+                    state?.errors?.companySize && 'border-destructive',
+                  )}
+                  aria-label="Select your company size"
+                >
+                  <SelectValue placeholder="Select your company size" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sizes.map((size) => (
+                    <SelectItem key={size.value} value={size.value}>
+                      {size.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {state?.errors?.companySize && (
+                <p id="company-size-error" className="text-destructive">
+                  {state.errors.companySize}
+                </p>
+              )}
+            </div>
           </div>
           <div className="flex flex-col gap-3">
             <Label htmlFor="product-interest">Primary product interest</Label>
