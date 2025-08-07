@@ -40,8 +40,8 @@ export function Console() {
   }
 
   return (
-    <Card className="h-full">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+    <Card className="flex h-full flex-col">
+      <CardHeader className="flex flex-shrink-0 flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">Console</CardTitle>
         <Button
           variant="outline"
@@ -52,11 +52,11 @@ export function Console() {
           <Trash2 className="h-4 w-4" />
         </Button>
       </CardHeader>
-      <CardContent className="p-0">
-        <ScrollArea className="h-80">
-          <div className="space-y-1 p-4">
+      <CardContent className="min-h-0 flex-1 p-0">
+        <ScrollArea className="h-full max-h-[80vh]">
+          <div className="space-y-4 p-4">
             {logs.length === 0 ? (
-              <p className="text-muted-foreground pl-2 text-sm">
+              <p className="text-muted-foreground pl-2 text-xs">
                 No logs yet...
               </p>
             ) : (
@@ -71,7 +71,7 @@ export function Console() {
                     </span>
                     <Badge
                       variant="outline"
-                      className={getLevelColor(log.level)}
+                      className={`${getLevelColor(log.level)} px-1 py-0 text-xs`}
                     >
                       {log.level.toUpperCase()}
                     </Badge>
