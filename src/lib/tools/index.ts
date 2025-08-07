@@ -1,1 +1,1 @@
-export { webScraper } from './web-scraper'
+export { webFetch } from './web-fetch'

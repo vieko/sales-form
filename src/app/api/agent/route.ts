@@ -1,5 +1,5 @@
 import { getPrompt } from '@/lib/prompts'
-import { webScraper } from '@/lib/tools'
+import { webFetch } from '@/lib/tools'
 import { openai } from '@ai-sdk/openai'
 import { stepCountIs, streamText } from 'ai'
 
@@ -10,7 +10,7 @@ const agent = async (prompt: string) => {
       system: getPrompt('sdrResearch'),
       prompt,
       tools: {
-        webScraper,
+        webFetch,
       },
       stopWhen: stepCountIs(10),
     })
