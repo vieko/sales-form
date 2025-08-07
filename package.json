@@ -2,6 +2,11 @@
   "name": "sales-form",
   "version": "0.1.0",
   "private": true,
+  "author": {
+    "name": "Vieko Franetovic",
+    "url": "https://github.com/vieko",
+    "email": "48670+vieko@users.noreply.github.com"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
