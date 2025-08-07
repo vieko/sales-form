@@ -1,7 +1,6 @@
 'use server'
 
 import { leadEnrichmentAgent } from '@/lib/agents/lead-enrichment'
-import { logger } from '@/lib/logger'
 
 // Mock behavioral data generator
 function generateMockBehavioralData() {
@@ -9,15 +8,16 @@ function generateMockBehavioralData() {
     pageViews: Math.floor(Math.random() * 15) + 3, // 3-18 page views
     timeOnSite: Math.floor(Math.random() * 300) + 120, // 2-7 minutes
     downloadedResources: [
+      // AGENT: search the Vercel website for relevant pages instead of downloaded documents. Use visitedResources instead
       'Product Overview PDF',
       'Pricing Guide',
-      'Integration Documentation'
+      'Integration Documentation',
     ].slice(0, Math.floor(Math.random() * 3) + 1),
     emailEngagement: {
       opened: Math.floor(Math.random() * 5) + 1, // 1-5 opens
-      clicked: Math.floor(Math.random() * 3) // 0-2 clicks
+      clicked: Math.floor(Math.random() * 3), // 0-2 clicks
     },
-    previousVisits: Math.floor(Math.random() * 5) + 1 // 1-5 previous visits
+    previousVisits: Math.floor(Math.random() * 5) + 1, // 1-5 previous visits
   }
 }
 
@@ -27,21 +27,22 @@ export async function enrichLeadWithConsoleUpdates(formData: FormData) {
     const leadData = {
       contactName: formData.get('contact-name') as string,
       companyEmail: formData.get('company-email') as string,
-      contactPhone: formData.get('contact-phone') as string || undefined,
+      contactPhone: (formData.get('contact-phone') as string) || undefined,
       companyWebsite: formData.get('company-website') as string,
       country: formData.get('country') as string,
       companySize: formData.get('company-size') as string,
       productInterest: formData.get('product-interest') as string,
       howCanWeHelp: formData.get('how-can-we-help') as string,
       mockBehavioralData: formData.get('mock-behavioral-data') === 'on',
-      behavioralData: formData.get('mock-behavioral-data') === 'on' 
-        ? generateMockBehavioralData() 
-        : undefined
+      behavioralData:
+        formData.get('mock-behavioral-data') === 'on'
+          ? generateMockBehavioralData()
+          : undefined,
     }
 
-    logger.info('🚀 Starting AI-powered lead enrichment...', {
+    console.log('🚀 Starting AI-powered lead enrichment...', {
       company: leadData.companyEmail.split('@')[1],
-      mockData: leadData.mockBehavioralData
+      mockData: leadData.mockBehavioralData,
     })
 
     // Use the streaming enrichment to provide real-time console updates
@@ -52,53 +53,55 @@ export async function enrichLeadWithConsoleUpdates(formData: FormData) {
     for await (const update of enrichmentStream) {
       switch (update.step) {
         case 'initializing':
-          logger.info('🔍 Initializing enrichment pipeline...', {
-            progress: update.progress
+          console.log('🔍 Initializing enrichment pipeline...', {
+            progress: update.progress,
           })
           break
 
         case 'company_intelligence':
-          logger.info('🏢 Gathering company intelligence...', {
-            message: 'Searching for funding, growth signals, and business intelligence',
-            progress: update.progress
+          console.log('🏢 Gathering company intelligence...', {
+            message:
+              'Searching for funding, growth signals, and business intelligence',
+            progress: update.progress,
           })
           break
 
         case 'website_analysis':
-          logger.info('🌐 Analyzing company website...', {
-            message: 'Crawling key pages for tech stack and business maturity signals',
-            progress: update.progress
+          console.log('🌐 Analyzing company website...', {
+            message:
+              'Crawling key pages for tech stack and business maturity signals',
+            progress: update.progress,
           })
           break
 
         case 'competitive_research':
-          logger.info('⚔️ Researching competitive landscape...', {
+          console.log('⚔️ Researching competitive landscape...', {
             message: 'Analyzing market position and competitive intelligence',
-            progress: update.progress
+            progress: update.progress,
           })
           break
 
         case 'intent_analysis':
-          logger.info('🎯 Analyzing buying intent...', {
+          console.log('🎯 Analyzing buying intent...', {
             message: 'Processing "how can we help" text for intent signals',
-            progress: update.progress
+            progress: update.progress,
           })
           break
 
         case 'final_analysis':
-          logger.info('🧮 Calculating lead score and classification...', {
+          console.log('🧮 Calculating lead score and classification...', {
             message: 'Running weighted scoring algorithm',
-            progress: update.progress
+            progress: update.progress,
           })
           break
 
         case 'completed':
           finalResult = update.result
-          
+
           if (finalResult) {
             const { classification, scores } = finalResult
-            
-            logger.success('✅ Lead enrichment completed!', {
+
+            console.log('✅ Lead enrichment completed!', {
               totalScore: scores.total,
               classification: classification.result,
               confidence: `${classification.confidence}%`,
@@ -106,62 +109,67 @@ export async function enrichLeadWithConsoleUpdates(formData: FormData) {
                 firmographic: scores.firmographic,
                 behavioral: scores.behavioral,
                 intent: scores.intent,
-                technographic: scores.technographic
-              }
+                technographic: scores.technographic,
+              },
             })
 
             // Log detailed classification result
             if (classification.result === 'SQL') {
-              logger.success('🔥 HIGH PRIORITY: Sales Qualified Lead detected!', {
+              console.log('🔥 HIGH PRIORITY: Sales Qualified Lead detected!', {
                 nextSteps: finalResult.recommendedActions.nextSteps,
-                reasoning: classification.reasoning
+                reasoning: classification.reasoning,
               })
             } else if (classification.result === 'MQL') {
-              logger.info('📈 Marketing Qualified Lead - nurture recommended', {
+              console.log('📈 Marketing Qualified Lead - nurture recommended', {
                 nextSteps: finalResult.recommendedActions.nextSteps,
-                reasoning: classification.reasoning
+                reasoning: classification.reasoning,
               })
             } else {
-              logger.warn('📋 Unqualified lead - adding to newsletter sequence', {
-                reasoning: classification.reasoning
-              })
+              console.log(
+                '📋 Unqualified lead - adding to newsletter sequence',
+                {
+                  reasoning: classification.reasoning,
+                },
+              )
             }
 
             // Log behavioral insights if mock data was used
             if (leadData.mockBehavioralData && leadData.behavioralData) {
-              logger.info('📊 Mock behavioral data applied:', leadData.behavioralData)
+              console.log(
+                '📊 Mock behavioral data applied:',
+                leadData.behavioralData,
+              )
             }
           }
           break
 
         case 'error':
-          logger.error('❌ Enrichment failed:', {
+          console.log('❌ Enrichment failed:', {
             error: update.error,
-            message: update.message
+            message: update.message,
           })
           break
       }
 
       // Add a small delay to make the progress visible in the console
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await new Promise((resolve) => setTimeout(resolve, 1000))
     }
 
     return {
       success: true,
       message: 'Lead enrichment completed successfully',
-      data: finalResult
+      data: finalResult,
     }
-
   } catch (error) {
-    logger.error('❌ Enrichment system error:', {
+    console.error('❌ Enrichment system error:', {
       error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     })
 
     return {
       success: false,
       message: 'Enrichment failed',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
     }
   }
 }
