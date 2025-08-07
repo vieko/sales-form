@@ -3,6 +3,8 @@ export interface ContactFormData {
   contactName: string
   contactPhone?: string
   country: string
+  companyWebsite: string
+  companySize: string
   productInterest: string
   howCanWeHelp: string
   privacyPolicy: boolean
