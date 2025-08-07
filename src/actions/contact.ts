@@ -27,13 +27,13 @@ function formDataToObject(
   }
 
   const result: Record<string, string | boolean> = {}
-
-  for (const [kebabKey, value] of Object.entries(entries)) {
-    const camelKey = fieldMapping[kebabKey]
-    if (camelKey) {
-      result[camelKey] =
-        camelKey === 'privacyPolicy' || camelKey === 'mockBehavioralData' 
-          ? value === 'on' 
+  // ==> kebab-case to camelCase
+  for (const [kk, value] of Object.entries(entries)) {
+    const ck = fieldMapping[kk]
+    if (ck) {
+      result[ck] =
+        ck === 'privacyPolicy' || ck === 'mockBehavioralData'
+          ? value === 'on'
           : (value as string)
     }
   }
@@ -65,19 +65,25 @@ export async function submitContact(
 
     // Get client metadata
     const headersList = await headers()
-    const ipAddress = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown'
+    const ipAddress =
+      headersList.get('x-forwarded-for') ||
+      headersList.get('x-real-ip') ||
+      'unknown'
     const userAgent = headersList.get('user-agent') || 'unknown'
 
     // Insert into database
-    const [submission] = await db.insert(salesFormSubmissions).values({
-      ...validatedData.data,
-      ipAddress,
-      userAgent,
-    }).returning()
+    const [submission] = await db
+      .insert(salesFormSubmissions)
+      .values({
+        ...validatedData.data,
+        ipAddress,
+        userAgent,
+      })
+      .returning()
 
     // Trigger lead enrichment in the background (fire and forget for POC)
     // In production, this would use a proper queue system like Inngest
-    enrichLeadWithConsoleUpdates(formData).catch(error => {
+    enrichLeadWithConsoleUpdates(formData).catch((error) => {
       console.error('Background enrichment failed:', error)
     })
 
@@ -87,7 +93,7 @@ export async function submitContact(
     }
   } catch (error) {
     console.error('Database error:', error)
-    
+
     // Handle database-specific errors
     if (error instanceof Error) {
       if (error.message.includes('unique constraint')) {
@@ -103,7 +109,7 @@ export async function submitContact(
         }
       }
     }
-    
+
     return {
       success: false,
       message: 'An unexpected error occurred while saving your submission.',
