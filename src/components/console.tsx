@@ -75,9 +75,9 @@ export function Console() {
                     </Badge>
                   </div>
                   <p className="mb-1">{log.message}</p>
-                  {log.data && (
+                  {log.data !== undefined && (
                     <pre className="bg-muted/50 overflow-x-auto rounded p-2 text-xs">
-                      {JSON.stringify(log.data, null, 2)}
+                      {String(JSON.stringify(log.data, null, 2) || 'undefined')}
                     </pre>
                   )}
                 </div>
