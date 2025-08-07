@@ -39,6 +39,7 @@ import { contactSchema, type ContactValues } from '@/lib/validations/contact'
 import { countries } from '@/lib/countries'
 import { products } from '@/lib/products'
 import { sizes } from '@/lib/sizes'
+import { isValidEmail } from '@/lib/utils'
 
 const initialState = {
   success: false,
@@ -63,6 +64,15 @@ export function SalesForm() {
       privacyPolicy: false,
     },
   })
+
+  // Watch form values for conditional rendering
+  const emailValue = form.watch('companyEmail')
+  const countryValue = form.watch('country')
+
+  // Determine field visibility
+  const showNameAndPhone = isValidEmail(emailValue)
+  const showWebsiteAndSize = countryValue.length > 0
+  const showPrivacy = countryValue.length > 0 && countryValue !== 'US'
 
   // Sync server errors back to the form
   useEffect(() => {
@@ -139,52 +149,54 @@ export function SalesForm() {
               )}
             />
             
-            <div className="grid gap-4 sm:grid-cols-2 sm:items-stretch">
-              <FormField
-                control={form.control}
-                name="contactName"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Your name</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="text"
-                        placeholder="Jody Smith"
-                        className="text-sm"
-                        {...field}
-                      />
-                    </FormControl>
-                    <div className="flex-1 flex items-end">
-                      <FormMessage />
-                    </div>
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="contactPhone"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>
-                      Phone number{' '}
-                      <span className="text-muted-foreground">(Optional)</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        type="tel"
-                        placeholder="(201) 555-0123"
-                        className="text-sm"
-                        {...field}
-                      />
-                    </FormControl>
-                    <div className="flex-1 flex items-end">
-                      <FormMessage />
-                    </div>
-                  </FormItem>
-                )}
-              />
-            </div>
+            {showNameAndPhone && (
+              <div className="grid gap-4 sm:grid-cols-2 sm:items-stretch">
+                <FormField
+                  control={form.control}
+                  name="contactName"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Your name</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="text"
+                          placeholder="Jody Smith"
+                          className="text-sm"
+                          {...field}
+                        />
+                      </FormControl>
+                      <div className="flex-1 flex items-end">
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="contactPhone"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>
+                        Phone number{' '}
+                        <span className="text-muted-foreground">(Optional)</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="tel"
+                          placeholder="(201) 555-0123"
+                          className="text-sm"
+                          {...field}
+                        />
+                      </FormControl>
+                      <div className="flex-1 flex items-end">
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
 
             <FormField
               control={form.control}
@@ -211,55 +223,57 @@ export function SalesForm() {
               )}
             />
 
-            <div className="grid gap-4 sm:grid-cols-2 sm:items-stretch">
-              <FormField
-                control={form.control}
-                name="companyWebsite"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Company website</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="url"
-                        placeholder="https://jodysmith.com"
-                        className="text-sm"
-                        {...field}
-                      />
-                    </FormControl>
-                    <div className="flex-1 flex items-end">
-                      <FormMessage />
-                    </div>
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="companySize"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Company size</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+            {showWebsiteAndSize && (
+              <div className="grid gap-4 sm:grid-cols-2 sm:items-stretch">
+                <FormField
+                  control={form.control}
+                  name="companyWebsite"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Company website</FormLabel>
                       <FormControl>
-                        <SelectTrigger className="w-full [&_span]:!block [&_span]:truncate">
-                          <SelectValue placeholder="Select your company size" />
-                        </SelectTrigger>
+                        <Input
+                          type="url"
+                          placeholder="https://jodysmith.com"
+                          className="text-sm"
+                          {...field}
+                        />
                       </FormControl>
-                      <SelectContent>
-                        {sizes.map((size) => (
-                          <SelectItem key={size.value} value={size.value}>
-                            {size.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <div className="flex-1 flex items-end">
-                      <FormMessage />
-                    </div>
-                  </FormItem>
-                )}
-              />
-            </div>
+                      <div className="flex-1 flex items-end">
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="companySize"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Company size</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="w-full [&_span]:!block [&_span]:truncate">
+                            <SelectValue placeholder="Select your company size" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {sizes.map((size) => (
+                            <SelectItem key={size.value} value={size.value}>
+                              {size.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <div className="flex-1 flex items-end">
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
 
             <FormField
               control={form.control}
@@ -305,40 +319,42 @@ export function SalesForm() {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="privacyPolicy"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex items-center justify-between gap-4 rounded border px-6 py-6">
-                    <FormLabel className="flex flex-col items-start">
-                      <span>Privacy Policy</span>
-                      <span className="text-muted-foreground leading-snug font-normal">
-                        Yes, I agree to receive marketing communications from Vercel as
-                        described in your{' '}
-                        <Link
-                          href="https://vercel.com/legal/privacy-policy"
-                          className="text-foreground hover:underline"
-                          target="_blank"
-                        >
-                          Privacy Policy
-                        </Link>
-                        . I can withdraw my consent at any time by clicking the
-                        unsubscribe link in the emails.
-                      </span>
-                    </FormLabel>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        aria-label="Privacy Policy"
-                      />
-                    </FormControl>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {showPrivacy && (
+              <FormField
+                control={form.control}
+                name="privacyPolicy"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-between gap-4 rounded border px-6 py-6">
+                      <FormLabel className="flex flex-col items-start">
+                        <span>Privacy Policy</span>
+                        <span className="text-muted-foreground leading-snug font-normal">
+                          Yes, I agree to receive marketing communications from Vercel as
+                          described in your{' '}
+                          <Link
+                            href="https://vercel.com/legal/privacy-policy"
+                            className="text-foreground hover:underline"
+                            target="_blank"
+                          >
+                            Privacy Policy
+                          </Link>
+                          . I can withdraw my consent at any time by clicking the
+                          unsubscribe link in the emails.
+                        </span>
+                      </FormLabel>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          aria-label="Privacy Policy"
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <Button
               type="submit"
