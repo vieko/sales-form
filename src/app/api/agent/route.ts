@@ -1,5 +1,5 @@
 import { getPrompt } from '@/lib/prompts'
-import { webFetch } from '@/lib/tools'
+import { webFetch, wikipediaSearch } from '@/lib/tools'
 import { openai } from '@ai-sdk/openai'
 import { stepCountIs, streamText } from 'ai'
 
@@ -11,6 +11,7 @@ const agent = async (prompt: string) => {
       prompt,
       tools: {
         webFetch,
+        wikipediaSearch,
       },
       stopWhen: stepCountIs(10),
     })
@@ -31,4 +32,4 @@ const agent = async (prompt: string) => {
   }
 }
 
-agent('devolverdigital.com')
+agent('Search Wikipedia for information about Devolver Digital')
