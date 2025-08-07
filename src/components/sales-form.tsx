@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import {
@@ -140,8 +141,16 @@ export function SalesForm() {
               <span>Privacy Policy</span>
               <span className="text-muted-foreground leading-snug font-normal">
                 Yes, I agree to receive marketing communications from Vercel as
-                described in your Privacy Policy. I can withdraw my consent at
-                any time by clicking the unsubscribe link in the emails.
+                described in your{' '}
+                <Link
+                  href="https://vercel.com/legal/privacy-policy"
+                  className="text-foreground hover:underline"
+                  target="_blank"
+                >
+                  Privacy Policy
+                </Link>
+                . I can withdraw my consent at any time by clicking the
+                unsubscribe link in the emails.
               </span>
             </Label>
             <Switch
