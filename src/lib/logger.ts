@@ -13,7 +13,7 @@ class Logger {
   private listeners: ((logs: LogEntry[]) => void)[] = []
 
   private generateId(): string {
-    return Math.random().toString(36).substr(2, 9)
+    return Math.random().toString(36).slice(2, 11)
   }
 
   private addLog(level: LogLevel, message: string, data?: unknown) {
