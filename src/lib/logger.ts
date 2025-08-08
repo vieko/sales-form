@@ -26,6 +26,12 @@ class Logger {
     }
     
     this.logs.unshift(entry)
+    
+    // Keep only last 100 logs to prevent memory issues
+    if (this.logs.length > 100) {
+      this.logs = this.logs.slice(0, 100)
+    }
+    
     this.notifyListeners()
   }
 

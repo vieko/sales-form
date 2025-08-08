@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET: Get current logs (for polling)
+// GET: Get current logs (fallback for non-SSE clients)
 export async function GET() {
   try {
     const logs = logger.getLogs()

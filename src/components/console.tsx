@@ -25,31 +25,66 @@ export function Console() {
   const [logs, setLogs] = useState<LogEntry[]>([])
 
   useEffect(() => {
-    // Initial load
+    // Subscribe to client-side logs
     setLogs(logger.getLogs())
     const unsubscribe = logger.subscribe(setLogs)
     
-    // Poll for server-side logs every 2 seconds
-    const pollInterval = setInterval(async () => {
-      try {
-        const response = await fetch('/api/console')
-        if (response.ok) {
-          const { logs: serverLogs } = await response.json()
-          // Merge with existing client-side logs, avoiding duplicates
-          setLogs(prevLogs => {
-            const existingIds = new Set(prevLogs.map(log => log.id))
-            const newLogs = serverLogs.filter((log: any) => !existingIds.has(log.id))
-            return [...newLogs, ...prevLogs]
-          })
+    // Set up Server-Sent Events for real-time server logs
+    let eventSource: EventSource | null = null
+    
+    try {
+      eventSource = new EventSource('/api/console/stream')
+      
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          
+          switch (data.type) {
+            case 'initial':
+            case 'update':
+              if (data.logs) {
+                setLogs(prevLogs => {
+                  // Merge server logs with client logs, avoiding duplicates
+                  const existingIds = new Set(prevLogs.map(log => log.id))
+                  const newLogs = data.logs.filter((log: LogEntry) => !existingIds.has(log.id))
+                  return [...newLogs, ...prevLogs]
+                })
+              }
+              break
+            case 'heartbeat':
+              // Keep connection alive, no action needed
+              break
+          }
+        } catch (error) {
+          console.error('Failed to parse SSE data:', error)
         }
-      } catch (error) {
-        console.error('Failed to fetch logs:', error)
       }
-    }, 2000)
+      
+      eventSource.onerror = (error) => {
+        console.error('SSE connection error:', error)
+        // Automatically reconnect after 5 seconds
+        setTimeout(() => {
+          if (eventSource?.readyState === EventSource.CLOSED) {
+            eventSource.close()
+            // Restart connection by triggering useEffect
+            setLogs(prev => [...prev])
+          }
+        }, 5000)
+      }
+      
+      eventSource.onopen = () => {
+        console.log('SSE connection established')
+      }
+      
+    } catch (error) {
+      console.error('Failed to establish SSE connection:', error)
+    }
     
     return () => {
       unsubscribe()
-      clearInterval(pollInterval)
+      if (eventSource) {
+        eventSource.close()
+      }
     }
   }, [])
 
