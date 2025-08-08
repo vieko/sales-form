@@ -30,9 +30,7 @@ modern web tools.
 
 ### Lead Enrichment Pipeline
 
-```
 Contact Form → Immediate Storage → Background Enrichment → Scoring → Classification → Routing
-```
 
 ### Data Sources
 
@@ -42,6 +40,11 @@ Contact Form → Immediate Storage → Background Enrichment → Scoring → Cla
 - **Perplexity Sonar**: Competitive intelligence
 
 ### Scoring System
+[HubSpot's Lead Scoring Guide (2025)](https://blog.hubspot.com/marketing/lead-scoring-instructions)
+
+[Gartner's B2B Lead Scoring Using Buyer Intent Signals](https://www.gartner.com/en/digital-markets/insights/lead-scoring-intent-signals)
+
+[Salesforce Ben's Advanced Lead Scoring Framework Guide (2024-2025)](https://www.salesforceben.com/advance-your-salesforce-lead-scoring-framework-in-2024/)
 
 Weighted scoring algorithm (0-100 points):
 
