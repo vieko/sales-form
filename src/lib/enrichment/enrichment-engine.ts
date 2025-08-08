@@ -84,7 +84,7 @@ TASK: Gather comprehensive data about this lead using the available tools. Be st
   console.log('=== STEP 1 === Gathering enrichment data with tools...')
 
   const dataGathering = await generateText({
-    model: openai('gpt-4o'),
+    model: 'openai/gpt-4o',
     system: DATA_GATHERING_PROMPT,
     prompt: leadContext,
     tools: {
@@ -118,7 +118,7 @@ Based on the original lead data and the gathered tool results above, create comp
 `
 
   const enrichmentResult = await generateObject({
-    model: openai('gpt-4o'),
+    model: 'openai/gpt-4o',
     system: SYNTHESIS_PROMPT,
     prompt: synthesisPrompt,
     schema: enrichmentResponseSchema,

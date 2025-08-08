@@ -1,4 +1,4 @@
-import { perplexity } from '@ai-sdk/perplexity'
+// Using Vercel AI Gateway - no provider imports needed
 import { generateText, tool } from 'ai'
 import { z } from 'zod'
 
@@ -36,7 +36,7 @@ export const competitiveIntelligence = tool({
             : `Identify the key differentiators and unique value propositions of ${company} compared to competitors in the ${industry} space. Focus on what sets them apart.`
 
       const result = await generateText({
-        model: perplexity('sonar-pro'),
+        model: 'perplexity/sonar-pro',
         prompt: `${prompt}\n\nSearch Query: ${searchQuery}`,
         temperature: 0.3,
       })

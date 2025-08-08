@@ -1,6 +1,6 @@
 import { tool } from 'ai'
 import { z } from 'zod'
-import { openai } from '@ai-sdk/openai'
+// Using Vercel AI Gateway - no provider imports needed
 import { generateObject } from 'ai'
 
 const SYSTEM_PROMPT = `
@@ -85,7 +85,7 @@ export const intentAnalysis = tool({
   execute: async ({ howCanWeHelpText, companyContext = '' }) => {
     try {
       const result = await generateObject({
-        model: openai('gpt-4o'),
+        model: 'openai/gpt-4o',
         system: SYSTEM_PROMPT,
         prompt: `Analyze this prospect's intent:
         
