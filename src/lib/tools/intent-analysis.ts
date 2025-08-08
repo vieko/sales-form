@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { openai } from '@ai-sdk/openai'
 import { generateObject } from 'ai'
 
-const SYSTEM = `
+const SYSTEM_PROMPT = `
 You are an expert sales development representative analyzing prospect intent. Analyze the provided text for buying signals and intent indicators:
 
 HIGH URGENCY signals:
@@ -86,7 +86,7 @@ export const intentAnalysis = tool({
     try {
       const result = await generateObject({
         model: openai('gpt-4o'),
-        system: SYSTEM,
+        system: SYSTEM_PROMPT,
         prompt: `Analyze this prospect's intent:
         
         Text: "${howCanWeHelpText}"

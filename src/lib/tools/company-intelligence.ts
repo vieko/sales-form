@@ -11,8 +11,7 @@ const DESCRIPTION = `
 Usage notes:
   - Works best with company domain (e.g., "stripe.com") or official company name
   - Searches for funding announcements, leadership changes, growth metrics
-  - Returns up to 5 recent results to control costs
-  - Results are cached for 7 days as per Oracle recommendations`
+  - Returns up to 5 recent results to control costs`
 
 export const companyIntelligence = tool({
   name: 'companyIntelligence',
