@@ -46,6 +46,10 @@ export async function submitContact(
       })
       .returning()
 
+    if (!submission?.id) {
+      throw new Error('Failed to create submission - no ID returned')
+    }
+
     // Log form submission to console
     await serverLogger.info(
       `New form submission received from ${validatedData.data.contactName}`,

@@ -11,7 +11,19 @@ export const enrichLead = inngest.createFunction(
   { id: 'enrich-lead', name: 'Enrich Lead Submission' },
   { event: 'lead/submitted' },
   async ({ event, step }) => {
-    const { submissionId } = event.data
+    console.log('=== EVENT DATA ===', JSON.stringify(event.data, null, 2))
+    
+    // Handle both normal events and re-run events (where data is nested)
+    const submissionId = event.data.submissionId || event.data.data?.submissionId
+
+    if (!submissionId) {
+      console.error('=== RERUN ERROR === submissionId is undefined in event data')
+      return {
+        success: false,
+        error: 'Cannot process event: submissionId is undefined. This appears to be a failed event from before the fix was applied.',
+        message: 'Event skipped due to missing submissionId. Future submissions will not have this issue.',
+      }
+    }
 
     const submission = await step.run('fetch-submission', async () => {
       const [result] = await db
