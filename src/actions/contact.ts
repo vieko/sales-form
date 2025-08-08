@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/db/drizzle'
-import { salesFormSubmissions } from '@/db/schemas'
+import { submissions } from '@/db/schemas'
 import { contactSchema } from '@/lib/validations/contact'
 import type { ActionResponse } from '@/types/contact'
 import { headers } from 'next/headers'
@@ -69,7 +69,7 @@ export async function submitContact(
     const userAgent = headersList.get('user-agent') || 'unknown'
 
     const [submission] = await db
-      .insert(salesFormSubmissions)
+      .insert(submissions)
       .values({
         ...validatedData.data,
         ipAddress,
@@ -77,8 +77,7 @@ export async function submitContact(
       })
       .returning()
 
-    // Trigger lead enrichment in the background (fire and forget for POC)
-    // In production, this would use a proper queue system like Inngest
+    // ==> trigger lead enrichment, should be queue for production
     enrichLeadWithConsoleUpdates(formData).catch((error) => {
       console.error('Background enrichment failed:', error)
     })
@@ -89,8 +88,6 @@ export async function submitContact(
     }
   } catch (error) {
     console.error('Database error:', error)
-
-    // Handle database-specific errors
     if (error instanceof Error) {
       if (error.message.includes('unique constraint')) {
         return {
@@ -105,7 +102,6 @@ export async function submitContact(
         }
       }
     }
-
     return {
       success: false,
       message: 'An unexpected error occurred while saving your submission.',

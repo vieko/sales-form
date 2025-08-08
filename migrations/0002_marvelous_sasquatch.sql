@@ -1,0 +1,1 @@
+ALTER TABLE "sales_form_submissions" RENAME TO "submissions";

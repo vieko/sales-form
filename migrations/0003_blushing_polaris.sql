@@ -1,0 +1,3 @@
+CREATE TYPE "public"."enrichment_status" AS ENUM('pending', 'enriching', 'completed', 'failed');--> statement-breakpoint
+ALTER TABLE "companies" ALTER COLUMN "enrichment_status" SET DEFAULT 'pending'::"public"."enrichment_status";--> statement-breakpoint
+ALTER TABLE "companies" ALTER COLUMN "enrichment_status" SET DATA TYPE "public"."enrichment_status" USING "enrichment_status"::"public"."enrichment_status";
