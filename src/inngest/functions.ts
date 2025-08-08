@@ -49,8 +49,12 @@ export const enrichLead = inngest.createFunction(
     const enrichmentResult = await step.run('call-enrichment-api', async () => {
       console.log('=== CALL === /api/enrich endpoint...')
 
+      const baseUrl = process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}`
+        : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/enrich`,
+        `${baseUrl}/api/enrich`,
         {
           method: 'POST',
           headers: {

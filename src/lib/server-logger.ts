@@ -8,21 +8,18 @@ interface ServerLogOptions {
 
 export async function logToConsole({ level, message, data }: ServerLogOptions) {
   try {
-    const baseUrl = process.env.VERCEL_URL 
+    const baseUrl = process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
-      : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-    
-    const response = await fetch(
-      `${baseUrl}/api/console`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ level, message, data }),
-      }
-    )
-    
+      : process.env.VERCEL_URL || 'http://localhost:3000'
+
+    const response = await fetch(`${baseUrl}/api/console`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ level, message, data }),
+    })
+
     if (!response.ok) {
       console.error('Failed to log to console:', await response.text())
     }
@@ -33,8 +30,12 @@ export async function logToConsole({ level, message, data }: ServerLogOptions) {
 
 // Convenience methods
 export const serverLogger = {
-  info: (message: string, data?: unknown) => logToConsole({ level: 'info', message, data }),
-  warn: (message: string, data?: unknown) => logToConsole({ level: 'warn', message, data }),
-  error: (message: string, data?: unknown) => logToConsole({ level: 'error', message, data }),
-  success: (message: string, data?: unknown) => logToConsole({ level: 'success', message, data }),
+  info: (message: string, data?: unknown) =>
+    logToConsole({ level: 'info', message, data }),
+  warn: (message: string, data?: unknown) =>
+    logToConsole({ level: 'warn', message, data }),
+  error: (message: string, data?: unknown) =>
+    logToConsole({ level: 'error', message, data }),
+  success: (message: string, data?: unknown) =>
+    logToConsole({ level: 'success', message, data }),
 }
