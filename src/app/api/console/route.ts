@@ -3,6 +3,20 @@ import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
+// DELETE: Clear all logs
+export async function DELETE() {
+  try {
+    logger.clear()
+    return NextResponse.json({ success: true, message: 'Console cleared' })
+  } catch (error) {
+    console.error('Console clear error:', error)
+    return NextResponse.json(
+      { error: 'Failed to clear console' },
+      { status: 500 }
+    )
+  }
+}
+
 // POST: Add log entry from server-side processes
 export async function POST(request: NextRequest) {
   try {

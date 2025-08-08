@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
         clearInterval(heartbeat)
         try {
           controller.close()
-        } catch (error) {
+        } catch {
           // Connection already closed
         }
       })
