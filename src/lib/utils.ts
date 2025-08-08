@@ -68,9 +68,11 @@ export function generateMockBehavioralData() {
     pageViews: Math.floor(Math.random() * 15) + 3, // 3-18 page views
     timeOnSite: Math.floor(Math.random() * 300) + 120, // 2-7 minutes
     visitedResources: [
-      'Product Overview PDF',
-      'Pricing Guide',
-      'Integration Documentation',
+      'pricing',
+      'enterprise',
+      'documentation',
+      'demo-request',
+      'security',
     ].slice(0, Math.floor(Math.random() * 3) + 1),
     emailEngagement: {
       opened: Math.floor(Math.random() * 5) + 1, // 1-5 opens
