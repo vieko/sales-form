@@ -38,12 +38,15 @@ export function Console() {
       eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data)
+          console.log('SSE data received:', data)
 
           switch (data.type) {
             case 'initial':
             case 'update':
               if (data.logs) {
+                console.log('Processing logs:', data.logs.length, 'logs')
                 setLogs((prevLogs) => {
+                  console.log('Previous logs count:', prevLogs.length)
                   // Merge server logs with client logs, avoiding duplicates
                   const existingIds = new Set(prevLogs.map((log) => log.id))
                   const newLogs = data.logs
@@ -53,10 +56,15 @@ export function Console() {
                       // Convert timestamp string back to Date object
                       timestamp: new Date(log.timestamp),
                     }))
-                  return [...prevLogs, ...newLogs].sort((a, b) => 
+                  console.log('New logs to add:', newLogs.length)
+                  const merged = [...prevLogs, ...newLogs].sort((a, b) => 
                     new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
                   )
+                  console.log('Final logs count:', merged.length)
+                  return merged
                 })
+              } else {
+                console.log('No logs in SSE data')
               }
               break
             case 'heartbeat':

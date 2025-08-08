@@ -67,6 +67,7 @@ class Logger {
   }
 
   clear() {
+    console.log('🗑️ Logger.clear() called - Stack trace:', new Error().stack)
     this.logs = []
     this.notifyListeners()
   }
