@@ -46,7 +46,13 @@ export function Console() {
                 setLogs(prevLogs => {
                   // Merge server logs with client logs, avoiding duplicates
                   const existingIds = new Set(prevLogs.map(log => log.id))
-                  const newLogs = data.logs.filter((log: LogEntry) => !existingIds.has(log.id))
+                  const newLogs = data.logs
+                    .filter((log: LogEntry) => !existingIds.has(log.id))
+                    .map((log: LogEntry) => ({
+                      ...log,
+                      // Convert timestamp string back to Date object
+                      timestamp: new Date(log.timestamp)
+                    }))
                   return [...newLogs, ...prevLogs]
                 })
               }
@@ -88,8 +94,9 @@ export function Console() {
     }
   }, [])
 
-  const formatTime = (timestamp: Date) => {
-    return timestamp.toLocaleTimeString('en-US', {
+  const formatTime = (timestamp: Date | string) => {
+    const date = timestamp instanceof Date ? timestamp : new Date(timestamp)
+    return date.toLocaleTimeString('en-US', {
       hour12: false,
       hour: '2-digit',
       minute: '2-digit',
