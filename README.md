@@ -56,8 +56,10 @@ Weighted scoring algorithm (0-100 points):
 - **UNQUALIFIED** (Score <40): Poor fit → Newsletter + education
 
 ### Resources
-[HubSpot's Lead Scoring Guide (2025)](https://blog.hubspot.com/marketing/lead-scoring-instructions)
+- [Planning Board](https://www.figma.com/board/ilLYIgWHEmz0u8Kx2civhI/modern-sales-form-using-ai-sdk?node-id=3-385&t=rrguyBs8zI7p7cao-1)
+- 
+- [HubSpot's Lead Scoring Guide (2025)](https://blog.hubspot.com/marketing/lead-scoring-instructions)
 
-[Gartner's B2B Lead Scoring Using Buyer Intent Signals](https://www.gartner.com/en/digital-markets/insights/lead-scoring-intent-signals)
+- [Gartner's B2B Lead Scoring Using Buyer Intent Signals](https://www.gartner.com/en/digital-markets/insights/lead-scoring-intent-signals)
 
-[Salesforce Ben's Advanced Lead Scoring Framework Guide (2024-2025)](https://www.salesforceben.com/advance-your-salesforce-lead-scoring-framework-in-2024/)
+- [Salesforce Ben's Advanced Lead Scoring Framework Guide (2024-2025)](https://www.salesforceben.com/advance-your-salesforce-lead-scoring-framework-in-2024/)
