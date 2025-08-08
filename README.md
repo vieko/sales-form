@@ -55,7 +55,7 @@ Weighted scoring algorithm (0-100 points):
 - **MQL** (Score 40-69): Good fit, needs nurturing → Marketing sequence
 - **UNQUALIFIED** (Score <40): Poor fit → Newsletter + education
 
-#### Resources
+### Resources
 [HubSpot's Lead Scoring Guide (2025)](https://blog.hubspot.com/marketing/lead-scoring-instructions)
 
 [Gartner's B2B Lead Scoring Using Buyer Intent Signals](https://www.gartner.com/en/digital-markets/insights/lead-scoring-intent-signals)
