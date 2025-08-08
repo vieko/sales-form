@@ -3,6 +3,7 @@ import { db } from '@/db/drizzle'
 import { submissions, leads, companies } from '@/db/schemas'
 import { eq } from 'drizzle-orm'
 import { generateMockBehavioralData } from '@/lib/utils'
+import { determineRouting } from '@/lib/routing/router'
 import type { EnrichmentInput } from '@/lib/schemas/enrichment'
 
 export const helloWorld = inngest.createFunction(
@@ -163,12 +164,94 @@ export const enrichLead = inngest.createFunction(
       },
     )
 
+    // Trigger routing after enrichment completes
+    await step.sendEvent('trigger-routing', {
+      name: 'lead/enriched',
+      data: {
+        leadId: storageResult.leadId,
+        classification: storageResult.classification,
+        score: storageResult.score,
+        contactName: submission.contactName,
+      },
+    })
+
     return {
       success: true,
       submissionId,
       enrichment: enrichmentResult,
       storage: storageResult,
       message: `Lead enriched and classified as ${storageResult.classification} (score: ${storageResult.score})`,
+    }
+  },
+)
+
+export const routeLead = inngest.createFunction(
+  { id: 'route-lead', name: 'Route Classified Lead' },
+  { event: 'lead/enriched' },
+  async ({ event, step }) => {
+    const { leadId, classification, score, contactName } = event.data
+
+    const routingDecision = await step.run('determine-routing', async () => {
+      return determineRouting(classification, score, contactName)
+    })
+
+    const routingResult = await step.run('apply-routing', async () => {
+      try {
+        await db
+          .update(leads)
+          .set({
+            routingStatus: 'routed',
+            routingAction: routingDecision.action,
+            routingMessage: routingDecision.message,
+            routedAt: new Date(),
+          })
+          .where(eq(leads.id, leadId))
+
+        console.log(`=== ROUTING === ${routingDecision.message}`)
+
+        return {
+          success: true,
+          leadId,
+          action: routingDecision.action,
+          message: routingDecision.message,
+          priority: routingDecision.priority,
+        }
+      } catch (error) {
+        console.error('Routing failed:', error)
+        throw error
+      }
+    })
+
+    // In a production system, this would trigger external notifications
+    await step.run('send-notifications', async () => {
+      console.log(`=== NOTIFICATION === Routing action: ${routingDecision.action}`)
+      console.log(`=== NOTIFICATION === Priority: ${routingDecision.priority}`)
+      
+      // For POC: just log the action that would be taken
+      switch (routingDecision.action) {
+        case 'sales_notification':
+          console.log('📢 Would send: Slack notification to sales team')
+          console.log('📢 Would send: High-priority email to sales reps')
+          console.log('📢 Would trigger: CRM fast-track workflow')
+          break
+        case 'marketing_nurture':
+          console.log('📧 Would trigger: Marketing automation sequence')
+          console.log('📧 Would add to: Lead scoring workflow')
+          break
+        case 'newsletter_signup':
+          console.log('📮 Would add to: Newsletter list')
+          console.log('📮 Would trigger: Welcome email sequence')
+          break
+      }
+      
+      return { notificationsSent: true }
+    })
+
+    return {
+      success: true,
+      leadId,
+      routing: routingResult,
+      message: `Lead routed successfully: ${routingDecision.message}`,
     }
   },
 )

@@ -13,7 +13,7 @@
     "start": "next start",
     "lint": "next lint",
     "queue:dev": "pnpm dlx inngest-cli@latest dev",
-    "ai:prompt": "tsx src/app/api/agent/route.ts",
+
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"
   },

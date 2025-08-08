@@ -1,5 +1,4 @@
 export * from './companies'
 export * from './leads'
 export * from './enrichment-logs'
-export * from './lead-activities'
 export * from './submissions'

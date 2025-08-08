@@ -70,6 +70,9 @@ export const leads = pgTable(
     routingStatus: routingStatusEnum('routing_status')
       .notNull()
       .default('pending'),
+    routingAction: varchar('routing_action', { length: 50 }),
+    routingMessage: text('routing_message'),
+    routedAt: timestamp('routed_at'),
 
     ipAddress: text('ip_address'),
     userAgent: text('user_agent'),
