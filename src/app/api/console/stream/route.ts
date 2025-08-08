@@ -7,7 +7,8 @@ export async function GET(request: NextRequest) {
   const encoder = new TextEncoder()
   let controller: ReadableStreamDefaultController<Uint8Array>
   
-  const sessionId = request.headers.get('x-session-id')
+  const url = new URL(request.url)
+  const sessionId = url.searchParams.get('sessionId')
   if (!sessionId) {
     return new Response('Session ID required', { status: 400 })
   }

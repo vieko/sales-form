@@ -33,7 +33,15 @@ export function Console() {
     let eventSource: EventSource | null = null
 
     try {
-      eventSource = new EventSource('/api/console/stream')
+      // Generate a session ID for this browser session
+      const sessionId = sessionStorage.getItem('sessionId') || 
+        (() => {
+          const id = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+          sessionStorage.setItem('sessionId', id)
+          return id
+        })()
+      
+      eventSource = new EventSource(`/api/console/stream?sessionId=${sessionId}`)
 
       eventSource.onmessage = (event) => {
         try {
