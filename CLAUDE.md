@@ -5,9 +5,7 @@ code in this repository.
 
 ## Project Overview
 
-This is a Next.js 15 project built with TypeScript, TailwindCSS v4, and set up
-for shadcn/ui components. The project uses pnpm as the package manager and is
-configured for Turbopack development mode.
+This is an intelligent lead enrichment and scoring system built with Next.js 15. The application automatically enriches, scores, and classifies sales leads using AI agents and modern web tools. It features a smart contact form, AI-powered enrichment pipeline, intelligent scoring system, and real-time lead classification.
 
 ## Development Commands
 
@@ -15,6 +13,9 @@ configured for Turbopack development mode.
 - **Build**: `pnpm build`
 - **Production server**: `pnpm start`
 - **Linting**: `pnpm lint`
+- **Inngest Dev Server**: `pnpm queue:dev` (for background job processing)
+- **Database Generate**: `pnpm db:generate` (generate Drizzle migrations)
+- **Database Migrate**: `pnpm db:migrate` (run Drizzle migrations)
 
 ## Development Server Management
 
@@ -36,21 +37,42 @@ sessions:
 - Lucide React for icons
 - pnpm workspace configuration
 
+### Database & Background Jobs
+
+- **Database**: Neon PostgreSQL with Drizzle ORM
+- **Background Jobs**: Inngest for async lead enrichment processing
+- **Schemas**: Companies, leads, submissions, enrichment-logs
+- **Migrations**: Located in `/migrations/` directory
+
+### AI & Data Sources
+
+- **Vercel AI SDK**: GPT-4 integration for lead analysis
+- **Exa API**: Company intelligence and market research
+- **Firecrawl**: Website crawling and analysis
+- **Perplexity API**: Competitive intelligence gathering
+
 ### Directory Structure
 
-- `src/app/` - Next.js App Router pages and layouts
-- `src/lib/` - Utility functions and shared libraries
+- `src/app/` - Next.js App Router pages, layouts, and API routes
+- `src/components/` - React components (SalesForm, Console, UI components)
+- `src/lib/` - Utilities, AI tools, prompts, and validation schemas
+- `src/db/` - Database configuration and schemas
+- `src/inngest/` - Background job functions and client setup
+- `src/actions/` - Server actions for form handling
+- `src/types/` - TypeScript type definitions
 - `@/components/ui` - shadcn/ui components (alias configured)
 - `@/lib/utils` - Utility functions (alias configured)
 
 ### Key Files
 
-- `src/lib/utils.ts` - Contains the `cn()` utility for className merging using
-  clsx and tailwind-merge
-- `components.json` - shadcn/ui configuration with New York style and RSC
-  enabled
-- `src/app/globals.css` - TailwindCSS imports with custom theme variables and
-  dark mode variant
+- `src/lib/utils.ts` - Contains the `cn()` utility for className merging using clsx and tailwind-merge
+- `src/inngest/functions.ts` - Background job functions for lead enrichment and routing
+- `src/db/drizzle.ts` - Database connection and configuration
+- `src/lib/tools/` - AI tools for company intelligence, competitive analysis, etc.
+- `src/lib/prompts/` - AI prompts for lead enrichment and SDR research
+- `drizzle.config.ts` - Drizzle ORM configuration for database migrations
+- `components.json` - shadcn/ui configuration with New York style and RSC enabled
+- `src/app/globals.css` - TailwindCSS imports with custom theme variables and dark mode variant
 
 ### Styling & Theme
 
@@ -65,6 +87,28 @@ sessions:
 - Strict TypeScript settings enabled
 - Next.js plugin configured for optimal development experience
 
+## Lead Enrichment Pipeline
+
+This application implements a multi-stage pipeline for lead processing:
+
+1. **Form Submission** → Immediate storage in `submissions` table
+2. **Background Enrichment** → Inngest job triggers AI-powered data gathering
+3. **Scoring & Classification** → Weighted algorithm determines lead quality
+4. **Routing** → Automatic assignment to sales/marketing/newsletter workflows
+
+### Inngest Functions
+
+- `enrichLead`: Main enrichment function that processes submissions using AI tools
+- `routeLead`: Routes classified leads to appropriate workflows based on score
+
+### AI Tools Architecture
+
+Located in `src/lib/tools/`, each tool provides specific enrichment capabilities:
+- Company intelligence gathering
+- Competitive analysis
+- Website technical analysis
+- Intent signal detection
+
 ## Component Development
 
 When creating new components:
@@ -73,4 +117,11 @@ When creating new components:
 - Follow the "new-york" style configuration
 - Leverage the configured aliases for imports
 - Utilize the extensive CSS custom properties for consistent theming
+
+## Database Development
+
+- Use Drizzle ORM for all database operations
+- Generate migrations with `pnpm db:generate`
+- Run migrations with `pnpm db:migrate`
+- Schema files are located in `src/db/schemas/`
 
