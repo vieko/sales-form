@@ -57,7 +57,7 @@ Weighted scoring algorithm (0-100 points):
 
 ### Resources
 - [Planning Board](https://www.figma.com/board/ilLYIgWHEmz0u8Kx2civhI/modern-sales-form-using-ai-sdk?node-id=3-385&t=rrguyBs8zI7p7cao-1)
-- 
+
 - [HubSpot's Lead Scoring Guide (2025)](https://blog.hubspot.com/marketing/lead-scoring-instructions)
 
 - [Gartner's B2B Lead Scoring Using Buyer Intent Signals](https://www.gartner.com/en/digital-markets/insights/lead-scoring-intent-signals)
