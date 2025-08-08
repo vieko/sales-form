@@ -8,8 +8,12 @@ interface ServerLogOptions {
 
 export async function logToConsole({ level, message, data }: ServerLogOptions) {
   try {
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}`
+      : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/console`,
+      `${baseUrl}/api/console`,
       {
         method: 'POST',
         headers: {
