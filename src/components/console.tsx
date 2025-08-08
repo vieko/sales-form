@@ -53,7 +53,9 @@ export function Console() {
                       // Convert timestamp string back to Date object
                       timestamp: new Date(log.timestamp),
                     }))
-                  return [...newLogs, ...prevLogs]
+                  return [...prevLogs, ...newLogs].sort((a, b) => 
+                    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                  )
                 })
               }
               break
@@ -72,8 +74,7 @@ export function Console() {
         setTimeout(() => {
           if (eventSource?.readyState === EventSource.CLOSED) {
             eventSource.close()
-            // Restart connection by triggering useEffect
-            setLogs((prev) => [...prev])
+            // Connection will restart on next render
           }
         }, 5000)
       }
