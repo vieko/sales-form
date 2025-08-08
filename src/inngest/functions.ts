@@ -3,6 +3,7 @@ import { db } from '@/db/drizzle'
 import { submissions } from '@/db/schemas'
 import { eq } from 'drizzle-orm'
 import { leadEnrichmentAgent } from '@/lib/agents/lead-enrichment'
+import { generateMockBehavioralData } from '@/lib/utils'
 
 export const helloWorld = inngest.createFunction(
   { id: 'hello-world' },
@@ -12,24 +13,6 @@ export const helloWorld = inngest.createFunction(
     return { message: `Hello, ${event.data.email}!` }
   },
 )
-
-// Mock behavioral data generator
-function generateMockBehavioralData() {
-  return {
-    pageViews: Math.floor(Math.random() * 15) + 3, // 3-18 page views
-    timeOnSite: Math.floor(Math.random() * 300) + 120, // 2-7 minutes
-    downloadedResources: [
-      'Product Overview PDF',
-      'Pricing Guide',
-      'Integration Documentation',
-    ].slice(0, Math.floor(Math.random() * 3) + 1),
-    emailEngagement: {
-      opened: Math.floor(Math.random() * 5) + 1, // 1-5 opens
-      clicked: Math.floor(Math.random() * 3), // 0-2 clicks
-    },
-    previousVisits: Math.floor(Math.random() * 5) + 1, // 1-5 previous visits
-  }
-}
 
 export const enrichLead = inngest.createFunction(
   { id: 'enrich-lead', name: 'Enrich Lead Submission' },
@@ -57,6 +40,7 @@ export const enrichLead = inngest.createFunction(
       return {
         ...submission,
         contactPhone: submission.contactPhone || undefined,
+        mockBehavioralData: submission.mockBehavioralData || undefined,
         behavioralData: submission.mockBehavioralData
           ? generateMockBehavioralData()
           : undefined,
@@ -86,7 +70,8 @@ export const enrichLead = inngest.createFunction(
           case 'company_intelligence':
             console.log('🏢 Gathering company intelligence...', {
               submissionId,
-              message: 'Searching for funding, growth signals, and business intelligence',
+              message:
+                'Searching for funding, growth signals, and business intelligence',
               progress: update.progress,
             })
             break
@@ -94,7 +79,8 @@ export const enrichLead = inngest.createFunction(
           case 'website_analysis':
             console.log('🌐 Analyzing company website...', {
               submissionId,
-              message: 'Crawling key pages for tech stack and business maturity signals',
+              message:
+                'Crawling key pages for tech stack and business maturity signals',
               progress: update.progress,
             })
             break
@@ -144,22 +130,31 @@ export const enrichLead = inngest.createFunction(
 
               // Log detailed classification result
               if (classification.result === 'SQL') {
-                console.log('🔥 HIGH PRIORITY: Sales Qualified Lead detected!', {
-                  submissionId,
-                  nextSteps: finalResult.recommendedActions.nextSteps,
-                  reasoning: classification.reasoning,
-                })
+                console.log(
+                  '🔥 HIGH PRIORITY: Sales Qualified Lead detected!',
+                  {
+                    submissionId,
+                    nextSteps: finalResult.recommendedActions.nextSteps,
+                    reasoning: classification.reasoning,
+                  },
+                )
               } else if (classification.result === 'MQL') {
-                console.log('📈 Marketing Qualified Lead - nurture recommended', {
-                  submissionId,
-                  nextSteps: finalResult.recommendedActions.nextSteps,
-                  reasoning: classification.reasoning,
-                })
+                console.log(
+                  '📈 Marketing Qualified Lead - nurture recommended',
+                  {
+                    submissionId,
+                    nextSteps: finalResult.recommendedActions.nextSteps,
+                    reasoning: classification.reasoning,
+                  },
+                )
               } else {
-                console.log('📋 Unqualified lead - adding to newsletter sequence', {
-                  submissionId,
-                  reasoning: classification.reasoning,
-                })
+                console.log(
+                  '📋 Unqualified lead - adding to newsletter sequence',
+                  {
+                    submissionId,
+                    reasoning: classification.reasoning,
+                  },
+                )
               }
 
               // Log behavioral insights if mock data was used

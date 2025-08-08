@@ -62,3 +62,20 @@ export function formDataToObject(
 
   return result
 }
+
+export function generateMockBehavioralData() {
+  return {
+    pageViews: Math.floor(Math.random() * 15) + 3, // 3-18 page views
+    timeOnSite: Math.floor(Math.random() * 300) + 120, // 2-7 minutes
+    downloadedResources: [
+      'Product Overview PDF',
+      'Pricing Guide',
+      'Integration Documentation',
+    ].slice(0, Math.floor(Math.random() * 3) + 1),
+    emailEngagement: {
+      opened: Math.floor(Math.random() * 5) + 1, // 1-5 opens
+      clicked: Math.floor(Math.random() * 3), // 0-2 clicks
+    },
+    previousVisits: Math.floor(Math.random() * 5) + 1, // 1-5 previous visits
+  }
+}
