@@ -25,9 +25,32 @@ export function Console() {
   const [logs, setLogs] = useState<LogEntry[]>([])
 
   useEffect(() => {
+    // Initial load
     setLogs(logger.getLogs())
     const unsubscribe = logger.subscribe(setLogs)
-    return unsubscribe
+    
+    // Poll for server-side logs every 2 seconds
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch('/api/console')
+        if (response.ok) {
+          const { logs: serverLogs } = await response.json()
+          // Merge with existing client-side logs, avoiding duplicates
+          setLogs(prevLogs => {
+            const existingIds = new Set(prevLogs.map(log => log.id))
+            const newLogs = serverLogs.filter((log: any) => !existingIds.has(log.id))
+            return [...newLogs, ...prevLogs]
+          })
+        }
+      } catch (error) {
+        console.error('Failed to fetch logs:', error)
+      }
+    }, 2000)
+    
+    return () => {
+      unsubscribe()
+      clearInterval(pollInterval)
+    }
   }, [])
 
   const formatTime = (timestamp: Date) => {

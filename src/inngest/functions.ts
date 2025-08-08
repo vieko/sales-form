@@ -4,6 +4,7 @@ import { submissions, leads, companies } from '@/db/schemas'
 import { eq } from 'drizzle-orm'
 import { generateMockBehavioralData } from '@/lib/utils'
 import { determineRouting } from '@/lib/routing/router'
+import { serverLogger } from '@/lib/server-logger'
 import type { EnrichmentInput } from '@/lib/schemas/enrichment'
 
 export const helloWorld = inngest.createFunction(
@@ -164,6 +165,19 @@ export const enrichLead = inngest.createFunction(
       },
     )
 
+    // Log enrichment completion to UI console
+    await step.run('log-enrichment-completion', async () => {
+      await serverLogger.success(
+        `Lead enriched and classified as ${storageResult.classification}`,
+        {
+          leadId: storageResult.leadId,
+          score: storageResult.score,
+          classification: storageResult.classification,
+          contactName: submission.contactName
+        }
+      )
+    })
+    
     // Trigger routing after enrichment completes
     await step.sendEvent('trigger-routing', {
       name: 'lead/enriched',
@@ -208,6 +222,15 @@ export const routeLead = inngest.createFunction(
           .where(eq(leads.id, leadId))
 
         console.log(`=== ROUTING === ${routingDecision.message}`)
+        
+        // Log to UI console
+        await serverLogger.success(routingDecision.message, {
+          leadId,
+          classification,
+          score,
+          action: routingDecision.action,
+          priority: routingDecision.priority
+        })
 
         return {
           success: true,
@@ -222,28 +245,52 @@ export const routeLead = inngest.createFunction(
       }
     })
 
-    // In a production system, this would trigger external notifications
+    // NOTE: For POC, just log the action that would be taken
     await step.run('send-notifications', async () => {
-      console.log(`=== NOTIFICATION === Routing action: ${routingDecision.action}`)
+      console.log(
+        `=== NOTIFICATION === Routing action: ${routingDecision.action}`,
+      )
       console.log(`=== NOTIFICATION === Priority: ${routingDecision.priority}`)
+      let notificationDetails: string[] = []
       
-      // For POC: just log the action that would be taken
       switch (routingDecision.action) {
         case 'sales_notification':
-          console.log('📢 Would send: Slack notification to sales team')
-          console.log('📢 Would send: High-priority email to sales reps')
-          console.log('📢 Would trigger: CRM fast-track workflow')
+          notificationDetails = [
+            'Slack notification to sales team',
+            'High-priority email to sales reps', 
+            'CRM fast-track workflow'
+          ]
+          console.log('WOULD SEND: Slack notification to sales team')
+          console.log('WOULD SEND: High-priority email to sales reps')
+          console.log('WOULD TRIGGER: CRM fast-track workflow')
           break
         case 'marketing_nurture':
-          console.log('📧 Would trigger: Marketing automation sequence')
-          console.log('📧 Would add to: Lead scoring workflow')
+          notificationDetails = [
+            'Marketing automation sequence',
+            'Lead scoring workflow'
+          ]
+          console.log('WOULD TRIGGER: Marketing automation sequence')
+          console.log('WOULD ADD TO: Lead scoring workflow')
           break
         case 'newsletter_signup':
-          console.log('📮 Would add to: Newsletter list')
-          console.log('📮 Would trigger: Welcome email sequence')
+          notificationDetails = [
+            'Newsletter list signup',
+            'Welcome email sequence'
+          ]
+          console.log('WOULD ADD TO: Newsletter list')
+          console.log('WOULD TRIGGER: Welcome email sequence')
           break
       }
       
+      // Log to UI console
+      await serverLogger.info(
+        `Triggered ${notificationDetails.length} ${routingDecision.action} actions`,
+        { 
+          actions: notificationDetails,
+          priority: routingDecision.priority 
+        }
+      )
+
       return { notificationsSent: true }
     })
 
