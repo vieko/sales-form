@@ -8,6 +8,7 @@ import { headers } from 'next/headers'
 import { z } from 'zod'
 import { inngest } from '@/inngest/client'
 import { formDataToObject } from '@/lib/utils'
+import { serverLogger } from '@/lib/server-logger'
 
 export async function submitContact(
   prevState: ActionResponse,
@@ -45,12 +46,33 @@ export async function submitContact(
       })
       .returning()
 
+    // Log form submission to console
+    await serverLogger.info(
+      `📝 New form submission received from ${validatedData.data.contactName}`,
+      {
+        submissionId: submission.id,
+        company: validatedData.data.companyWebsite,
+        companySize: validatedData.data.companySize,
+        productInterest: validatedData.data.productInterest,
+        country: validatedData.data.country
+      }
+    )
+
     // ==> trigger lead enrichment via Inngest
     await inngest.send({
       name: 'lead/submitted',
       data: { submissionId: submission.id },
-    }).catch((error) => {
+    }).then(async () => {
+      await serverLogger.info('⚡ Lead enrichment pipeline started', {
+        submissionId: submission.id,
+        pipeline: 'AI enrichment → scoring → classification → routing'
+      })
+    }).catch(async (error) => {
       console.error('Failed to queue enrichment:', error)
+      await serverLogger.error('❌ Failed to start enrichment pipeline', {
+        submissionId: submission.id,
+        error: error.message
+      })
     })
 
     return {
