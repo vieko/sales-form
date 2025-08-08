@@ -141,7 +141,7 @@ export const enrichLeadFunction = inngest.createFunction(
               ),
               classification: enrichmentData.scoring.classification,
               classificationConfidence:
-                enrichmentData.scoring.classificationConfidence,
+                enrichmentData.scoring.classificationConfidence.toString(),
               intentAnalysis: enrichmentData.intentAnalysis,
               enrichmentStatus: 'completed',
               enrichedAt: new Date(),
