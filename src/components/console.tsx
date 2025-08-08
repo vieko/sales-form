@@ -122,8 +122,8 @@ export function Console() {
         <ScrollArea className="h-full max-h-[80vh]">
           <div className="space-y-4 p-4">
             {logs.length === 0 ? (
-              <p className="text-muted-foreground pl-2 text-xs">
-                No logs yet...
+              <p className="text-muted-foreground/40 pl-2 text-xs">
+                waiting for logs...
               </p>
             ) : (
               logs.map((log) => (
