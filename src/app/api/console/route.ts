@@ -4,9 +4,17 @@ import { logger } from '@/lib/logger'
 export const dynamic = 'force-dynamic'
 
 // DELETE: Clear all logs
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   try {
-    logger.clear()
+    const sessionId = request.headers.get('x-session-id')
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'Session ID required' },
+        { status: 400 }
+      )
+    }
+    
+    logger.clear(sessionId)
     return NextResponse.json({ success: true, message: 'Console cleared' })
   } catch (error) {
     console.error('Console clear error:', error)
@@ -21,10 +29,18 @@ export async function DELETE() {
 export async function POST(request: NextRequest) {
   try {
     const { level, message, data } = await request.json()
+    const sessionId = request.headers.get('x-session-id')
     
     if (!level || !message) {
       return NextResponse.json(
         { error: 'Missing required fields: level, message' },
+        { status: 400 }
+      )
+    }
+    
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'Session ID required' },
         { status: 400 }
       )
     }
@@ -37,7 +53,7 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    logger[level as keyof typeof logger](message, data)
+    logger[level as keyof typeof logger](message, data, sessionId)
     
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -50,9 +66,17 @@ export async function POST(request: NextRequest) {
 }
 
 // GET: Get current logs (fallback for non-SSE clients)
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const logs = logger.getLogs()
+    const sessionId = request.headers.get('x-session-id')
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'Session ID required' },
+        { status: 400 }
+      )
+    }
+    
+    const logs = logger.getLogs(sessionId)
     return NextResponse.json({ logs })
   } catch (error) {
     console.error('Console API error:', error)

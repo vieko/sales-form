@@ -9,67 +9,83 @@ export interface LogEntry {
 }
 
 class Logger {
-  private logs: LogEntry[] = []
-  private listeners: ((logs: LogEntry[]) => void)[] = []
+  private sessionLogs = new Map<string, LogEntry[]>()
+  private sessionListeners = new Map<string, ((logs: LogEntry[]) => void)[]>()
 
   private generateId(): string {
     return Math.random().toString(36).slice(2, 11)
   }
 
-  private addLog(level: LogLevel, message: string, data?: unknown) {
+  private addLog(level: LogLevel, message: string, data?: unknown, sessionId?: string) {
     const entry: LogEntry = {
       id: this.generateId(),
       timestamp: new Date(),
       level,
       message,
-      data
+      data,
     }
-    
-    this.logs.unshift(entry)
-    
-    // Keep only last 100 logs to prevent memory issues
-    if (this.logs.length > 100) {
-      this.logs = this.logs.slice(0, 100)
+
+    if (sessionId) {
+      const logs = this.sessionLogs.get(sessionId) || []
+      logs.unshift(entry)
+      
+      if (logs.length > 100) {
+        logs.splice(100)
+      }
+      
+      this.sessionLogs.set(sessionId, logs)
+      this.notifySessionListeners(sessionId)
     }
+  }
+
+  info(message: string, data?: unknown, sessionId?: string) {
+    this.addLog('info', message, data, sessionId)
+  }
+
+  warn(message: string, data?: unknown, sessionId?: string) {
+    this.addLog('warn', message, data, sessionId)
+  }
+
+  error(message: string, data?: unknown, sessionId?: string) {
+    this.addLog('error', message, data, sessionId)
+  }
+
+  success(message: string, data?: unknown, sessionId?: string) {
+    this.addLog('success', message, data, sessionId)
+  }
+
+  getLogs(sessionId?: string): LogEntry[] {
+    if (sessionId) {
+      return [...(this.sessionLogs.get(sessionId) || [])]
+    }
+    return []
+  }
+
+  subscribe(listener: (logs: LogEntry[]) => void, sessionId?: string) {
+    if (!sessionId) return () => {}
     
-    this.notifyListeners()
-  }
-
-  info(message: string, data?: unknown) {
-    this.addLog('info', message, data)
-  }
-
-  warn(message: string, data?: unknown) {
-    this.addLog('warn', message, data)
-  }
-
-  error(message: string, data?: unknown) {
-    this.addLog('error', message, data)
-  }
-
-  success(message: string, data?: unknown) {
-    this.addLog('success', message, data)
-  }
-
-  getLogs(): LogEntry[] {
-    return [...this.logs]
-  }
-
-  subscribe(listener: (logs: LogEntry[]) => void) {
-    this.listeners.push(listener)
+    const listeners = this.sessionListeners.get(sessionId) || []
+    listeners.push(listener)
+    this.sessionListeners.set(sessionId, listeners)
+    
     return () => {
-      this.listeners = this.listeners.filter(l => l !== listener)
+      const currentListeners = this.sessionListeners.get(sessionId) || []
+      const filtered = currentListeners.filter((l) => l !== listener)
+      this.sessionListeners.set(sessionId, filtered)
     }
   }
 
-  private notifyListeners() {
-    this.listeners.forEach(listener => listener([...this.logs]))
+  private notifySessionListeners(sessionId: string) {
+    const listeners = this.sessionListeners.get(sessionId) || []
+    const logs = this.sessionLogs.get(sessionId) || []
+    listeners.forEach((listener) => listener([...logs]))
   }
 
-  clear() {
-    console.log('🗑️ Logger.clear() called - Stack trace:', new Error().stack)
-    this.logs = []
-    this.notifyListeners()
+  clear(sessionId?: string) {
+    if (sessionId) {
+      this.sessionLogs.set(sessionId, [])
+      this.notifySessionListeners(sessionId)
+    }
   }
 }
 

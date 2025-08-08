@@ -6,12 +6,17 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   const encoder = new TextEncoder()
   let controller: ReadableStreamDefaultController<Uint8Array>
+  
+  const sessionId = request.headers.get('x-session-id')
+  if (!sessionId) {
+    return new Response('Session ID required', { status: 400 })
+  }
 
   const stream = new ReadableStream({
     start(ctrl) {
       controller = ctrl
 
-      const initialLogs = logger.getLogs()
+      const initialLogs = logger.getLogs(sessionId)
       if (initialLogs.length > 0) {
         const data = `data: ${JSON.stringify({ type: 'initial', logs: initialLogs })}\n\n`
         controller.enqueue(encoder.encode(data))
@@ -24,7 +29,7 @@ export async function GET(request: NextRequest) {
         } catch (error) {
           console.error('SSE error:', error)
         }
-      })
+      }, sessionId)
 
       const heartbeat = setInterval(() => {
         try {
