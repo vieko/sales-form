@@ -64,3 +64,5 @@ Weighted scoring algorithm (0-100 points):
 - [Gartner's B2B Lead Scoring Using Buyer Intent Signals](https://www.gartner.com/en/digital-markets/insights/lead-scoring-intent-signals)
 
 - [Salesforce Ben's Advanced Lead Scoring Framework Guide (2024-2025)](https://www.salesforceben.com/advance-your-salesforce-lead-scoring-framework-in-2024/)
+
+- [Build An Agent in 10 mins with AI SDK 5 with Nico Albanese from Vercel, AI Demo Days](https://www.youtube.com/watch?v=TjAbtsPC-Sw)
