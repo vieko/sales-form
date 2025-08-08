@@ -6,40 +6,8 @@ import { contactSchema } from '@/lib/validations/contact'
 import type { ActionResponse } from '@/types/contact'
 import { headers } from 'next/headers'
 import { z } from 'zod'
-import { enrichLeadWithConsoleUpdates } from './lead-enrichment'
-
-function formDataToObject(
-  formData: FormData,
-): Record<string, string | boolean> {
-  const entries = Object.fromEntries(formData)
-
-  const fieldMapping: Record<string, string> = {
-    'company-email': 'companyEmail',
-    'contact-name': 'contactName',
-    'contact-phone': 'contactPhone',
-    country: 'country',
-    'company-website': 'companyWebsite',
-    'company-size': 'companySize',
-    'product-interest': 'productInterest',
-    'how-can-we-help': 'howCanWeHelp',
-    'privacy-policy': 'privacyPolicy',
-    'mock-behavioral-data': 'mockBehavioralData',
-  }
-
-  const result: Record<string, string | boolean> = {}
-  // ==> kebab-case to camelCase
-  for (const [kk, value] of Object.entries(entries)) {
-    const ck = fieldMapping[kk]
-    if (ck) {
-      result[ck] =
-        ck === 'privacyPolicy' || ck === 'mockBehavioralData'
-          ? value === 'on'
-          : (value as string)
-    }
-  }
-
-  return result
-}
+import { inngest } from '@/inngest/client'
+import { formDataToObject } from '@/lib/utils'
 
 export async function submitContact(
   prevState: ActionResponse,
@@ -77,9 +45,12 @@ export async function submitContact(
       })
       .returning()
 
-    // ==> trigger lead enrichment, should be queue for production
-    enrichLeadWithConsoleUpdates(formData).catch((error) => {
-      console.error('Background enrichment failed:', error)
+    // ==> trigger lead enrichment via Inngest
+    await inngest.send({
+      name: 'lead/submitted',
+      data: { submissionId: submission.id },
+    }).catch((error) => {
+      console.error('Failed to queue enrichment:', error)
     })
 
     return {
