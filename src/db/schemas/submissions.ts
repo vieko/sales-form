@@ -12,6 +12,7 @@ export const submissions = pgTable('submissions', {
   productInterest: text('product_interest').notNull(),
   howCanWeHelp: text('how_can_we_help').notNull(),
   privacyPolicy: boolean('privacy_policy').default(false),
+  mockBehavioralData: boolean('mock_behavioral_data').default(false),
 
   ipAddress: text('ip_address'),
   userAgent: text('user_agent'),

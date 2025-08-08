@@ -1,0 +1,1 @@
+ALTER TABLE "submissions" ADD COLUMN "mock_behavioral_data" boolean DEFAULT false;
