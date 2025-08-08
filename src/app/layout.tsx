@@ -37,7 +37,9 @@ export default function RootLayout({
         >
           <div className="bg-background relative flex flex-1 flex-col md:m-2 md:rounded-xl">
             <SiteHeader />
-            <div className="flex flex-1 flex-col">{children}</div>
+            <div className="mx-auto flex max-w-7xl flex-1 flex-col">
+              {children}
+            </div>
           </div>
         </ThemeProvider>
       </body>
