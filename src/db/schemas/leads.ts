@@ -35,7 +35,7 @@ export const leads = pgTable(
     behavioralData: jsonb('behavioral_data').$type<{
       pageViews?: number
       timeOnSite?: number
-      downloadedResources?: string[]
+      visitedResources?: string[]
       emailEngagement?: {
         opened: number
         clicked: number
@@ -84,19 +84,15 @@ export const leads = pgTable(
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
     enrichedAt: timestamp('enriched_at'),
   },
-  (table) => ({
-    companyIdIdx: index('leads_company_id_idx').on(table.companyId),
-    emailIdx: index('leads_email_idx').on(table.companyEmail),
-    scoreIdx: index('leads_score_idx').on(table.leadScore),
-    classificationIdx: index('leads_classification_idx').on(
-      table.classification,
-    ),
-    enrichmentStatusIdx: index('leads_enrichment_status_idx').on(
-      table.enrichmentStatus,
-    ),
-    routingStatusIdx: index('leads_routing_status_idx').on(table.routingStatus),
-    createdAtIdx: index('leads_created_at_idx').on(table.createdAt),
-  }),
+  (table) => [
+    index('leads_company_id_idx').on(table.companyId),
+    index('leads_email_idx').on(table.companyEmail),
+    index('leads_score_idx').on(table.leadScore),
+    index('leads_classification_idx').on(table.classification),
+    index('leads_enrichment_status_idx').on(table.enrichmentStatus),
+    index('leads_routing_status_idx').on(table.routingStatus),
+    index('leads_created_at_idx').on(table.createdAt),
+  ],
 )
 
 export type Lead = typeof leads.$inferSelect

@@ -1,7 +1,7 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Loader2, CheckCircle } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import {
   startTransition,

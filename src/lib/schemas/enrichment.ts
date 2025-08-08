@@ -191,7 +191,7 @@ export const enrichmentInputSchema = z.object({
     .object({
       pageViews: z.number().optional(),
       timeOnSite: z.number().optional(),
-      downloadedResources: z.array(z.string()).optional(),
+      visitedResources: z.array(z.string()).optional(),
       emailEngagement: z
         .object({
           opened: z.number(),

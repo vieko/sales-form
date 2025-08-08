@@ -67,7 +67,7 @@ export function generateMockBehavioralData() {
   return {
     pageViews: Math.floor(Math.random() * 15) + 3, // 3-18 page views
     timeOnSite: Math.floor(Math.random() * 300) + 120, // 2-7 minutes
-    downloadedResources: [
+    visitedResources: [
       'Product Overview PDF',
       'Pricing Guide',
       'Integration Documentation',

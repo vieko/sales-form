@@ -75,7 +75,7 @@ ${
     ? `BEHAVIORAL DATA:
 - Page Views: ${validatedInput.behavioralData.pageViews}
 - Time on Site: ${validatedInput.behavioralData.timeOnSite} minutes
-- Downloaded Resources: ${validatedInput.behavioralData.downloadedResources?.join(', ') || 'None'}
+- Visited Resources: ${validatedInput.behavioralData.visitedResources?.join(', ') || 'None'}
 - Email Engagement: ${validatedInput.behavioralData.emailEngagement ? `${validatedInput.behavioralData.emailEngagement.opened} opens, ${validatedInput.behavioralData.emailEngagement.clicked} clicks` : 'No data'}
 - Previous Visits: ${validatedInput.behavioralData.previousVisits || 'Unknown'}`
     : ''
