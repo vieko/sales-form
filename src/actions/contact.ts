@@ -1,11 +1,11 @@
 'use server'
 
-import { z } from 'zod'
-import { contactSchema } from '@/lib/validations/contact'
-import type { ActionResponse } from '@/types/contact'
 import { db } from '@/db/drizzle'
 import { salesFormSubmissions } from '@/db/schemas'
+import { contactSchema } from '@/lib/validations/contact'
+import type { ActionResponse } from '@/types/contact'
 import { headers } from 'next/headers'
+import { z } from 'zod'
 import { enrichLeadWithConsoleUpdates } from './lead-enrichment'
 
 function formDataToObject(
@@ -45,8 +45,6 @@ export async function submitContact(
   prevState: ActionResponse,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await new Promise((resolve) => setTimeout(resolve, 1000))
-
   try {
     const rawData = formDataToObject(formData)
     const validatedData = contactSchema.safeParse(rawData)
@@ -54,7 +52,7 @@ export async function submitContact(
     if (!validatedData.success) {
       return {
         success: false,
-        message: 'Please fix the errors in the form',
+        message: 'Please resolve the errors in the form',
         errors: Object.fromEntries(
           Object.entries(
             z.treeifyError(validatedData.error).properties || {},
@@ -63,7 +61,6 @@ export async function submitContact(
       }
     }
 
-    // Get client metadata
     const headersList = await headers()
     const ipAddress =
       headersList.get('x-forwarded-for') ||
@@ -71,7 +68,6 @@ export async function submitContact(
       'unknown'
     const userAgent = headersList.get('user-agent') || 'unknown'
 
-    // Insert into database
     const [submission] = await db
       .insert(salesFormSubmissions)
       .values({
