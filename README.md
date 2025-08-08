@@ -20,9 +20,10 @@ modern web tools.
 - **Framework**: Next.js 15 with App Router
 - **Language**: TypeScript
 - **Database**: Neon (PostgreSQL) with Drizzle ORM
-- **AI**: Vercel AI SDK 5 with GPT-4
+- **AI**: Vercel AI SDK 5 with OpenAI & Perplexity providers
 - **Styling**: Tailwind CSS v4 + shadcn/ui
 - **Forms**: React Hook Form + Zod validation
+- **Queue**: Inngest for background job processing
 - **Data Sources**: Exa API, Firecrawl, Perplexity Sonar
 
 ## Architecture
