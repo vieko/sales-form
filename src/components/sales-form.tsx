@@ -1,11 +1,10 @@
 'use client'
 
-import { useEffect, startTransition, useMemo } from 'react'
-import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useActionState } from 'react'
-import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
+import Link from 'next/link'
+import { startTransition, useActionState, useEffect, useMemo } from 'react'
+import { useForm } from 'react-hook-form'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -15,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Form,
   FormControl,
@@ -33,14 +33,13 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { Checkbox } from '@/components/ui/checkbox'
 
 import { submitContact } from '@/actions/contact'
-import { contactSchema, type ContactValues } from '@/lib/validations/contact'
 import { countries } from '@/lib/countries'
+import { logger } from '@/lib/logger'
 import { products } from '@/lib/products'
 import { sizes } from '@/lib/sizes'
-import { logger } from '@/lib/logger'
+import { contactSchema, type ContactValues } from '@/lib/validations/contact'
 
 const initialState = {
   success: false,
@@ -67,11 +66,11 @@ export function SalesForm() {
     },
   })
 
-  // Watch form values for conditional rendering
+  // ==> watch values for conditional rendering
   const emailValue = form.watch('companyEmail')
   const countryValue = form.watch('country')
 
-  // Determine field visibility with memoization to prevent unnecessary re-renders
+  // ==> determine field visibility
   const showNameAndPhone = useMemo(() => {
     return (
       emailValue.includes('@') &&
@@ -117,7 +116,6 @@ export function SalesForm() {
   const onSubmit = (data: ContactValues) => {
     logger.info('Form validation passed, preparing submission')
 
-    // Convert form data to FormData with proper field name mapping (camelCase to kebab-case)
     const formData = new FormData()
     formData.append('company-email', data.companyEmail)
     formData.append('contact-name', data.contactName)
@@ -364,33 +362,37 @@ export function SalesForm() {
                   <FormMessage />
                 </FormItem>
               )}
-              />
+            />
 
-              <FormField
-            control={form.control}
-            name="mockBehavioralData"
-            render={({ field }) => (
-              <FormItem>
-                <div className="flex items-center justify-between gap-4 rounded border px-6 py-4">
-                  <FormLabel className="flex flex-col items-start">
-                    <span className="text-sm font-medium">Mock Behavioral Data</span>
-                    <span className="text-muted-foreground text-xs font-normal leading-snug">
-                      Enable mock engagement data (page views, downloads, email interactions) for POC demonstration
-                    </span>
-                  </FormLabel>
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <FormField
+              control={form.control}
+              name="mockBehavioralData"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-center justify-between gap-4 rounded border px-6 py-4">
+                    <FormLabel className="flex flex-col items-start">
+                      <span className="text-sm font-medium">
+                        Mock Behavioral Data
+                      </span>
+                      <span className="text-muted-foreground text-xs leading-snug font-normal">
+                        Enable mock engagement data (page views, downloads,
+                        email interactions) for POC demonstration
+                      </span>
+                    </FormLabel>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        aria-label="Mock Behavioral Data"
+                      />
+                    </FormControl>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          {showPrivacy && (
+            {showPrivacy && (
               <FormField
                 control={form.control}
                 name="privacyPolicy"
