@@ -51,7 +51,7 @@ export async function submitContact(
     }
 
     // Log form submission to console
-    await serverLogger.info(
+    serverLogger.info(
       `New form submission received from ${validatedData.data.contactName}`,
       {
         submissionId: submission.id,
@@ -68,15 +68,15 @@ export async function submitContact(
         name: 'lead/submitted',
         data: { submissionId: submission.id },
       })
-      .then(async () => {
-        await serverLogger.info('Lead enrichment pipeline started', {
+      .then(() => {
+        serverLogger.info('Lead enrichment pipeline started', {
           submissionId: submission.id,
           pipeline: 'AI enrichment → scoring → classification → routing',
         })
       })
-      .catch(async (error) => {
+      .catch((error) => {
         console.error('Failed to queue enrichment:', error)
-        await serverLogger.error('Failed to start enrichment pipeline', {
+        serverLogger.error('Failed to start enrichment pipeline', {
           submissionId: submission.id,
           error: error.message,
         })

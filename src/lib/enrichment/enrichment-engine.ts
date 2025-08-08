@@ -133,6 +133,6 @@ Based on the original lead data and the gathered tool results above, create comp
     domain,
     gatheringSteps: dataGathering.steps.length,
     toolCalls: dataGathering.toolCalls.length,
-    gatheringSummary: dataGathering.text.slice(0, 200) + '...', // First 200 chars of AI reasoning
+    gatheringSummary: dataGathering.text.slice(0, 200) + '...',
   }
 }

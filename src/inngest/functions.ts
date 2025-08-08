@@ -163,8 +163,8 @@ export const enrichLeadFunction = inngest.createFunction(
     )
 
     // Log enrichment completion to UI console
-    await step.run('log-enrichment-completion', async () => {
-      await serverLogger.success(
+    await step.run('log-enrichment-completion', () => {
+      serverLogger.success(
         `Lead enriched and classified as ${storageResult.classification}`,
         {
           leadId: storageResult.leadId,
@@ -221,7 +221,7 @@ export const routeLead = inngest.createFunction(
         console.log(`=== ROUTING === ${routingDecision.message}`)
 
         // Log to UI console
-        await serverLogger.success(routingDecision.message, {
+        serverLogger.success(routingDecision.message, {
           leadId,
           classification,
           score,
@@ -280,7 +280,7 @@ export const routeLead = inngest.createFunction(
       }
 
       // Log to UI console
-      await serverLogger.info(
+      serverLogger.info(
         `Triggered ${notificationDetails.length} ${routingDecision.action} actions`,
         {
           actions: notificationDetails,
