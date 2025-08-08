@@ -28,30 +28,30 @@ export function Console() {
     // Subscribe to client-side logs
     setLogs(logger.getLogs())
     const unsubscribe = logger.subscribe(setLogs)
-    
+
     // Set up Server-Sent Events for real-time server logs
     let eventSource: EventSource | null = null
-    
+
     try {
       eventSource = new EventSource('/api/console/stream')
-      
+
       eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data)
-          
+
           switch (data.type) {
             case 'initial':
             case 'update':
               if (data.logs) {
-                setLogs(prevLogs => {
+                setLogs((prevLogs) => {
                   // Merge server logs with client logs, avoiding duplicates
-                  const existingIds = new Set(prevLogs.map(log => log.id))
+                  const existingIds = new Set(prevLogs.map((log) => log.id))
                   const newLogs = data.logs
                     .filter((log: LogEntry) => !existingIds.has(log.id))
                     .map((log: LogEntry) => ({
                       ...log,
                       // Convert timestamp string back to Date object
-                      timestamp: new Date(log.timestamp)
+                      timestamp: new Date(log.timestamp),
                     }))
                   return [...newLogs, ...prevLogs]
                 })
@@ -65,7 +65,7 @@ export function Console() {
           console.error('Failed to parse SSE data:', error)
         }
       }
-      
+
       eventSource.onerror = (error) => {
         console.error('SSE connection error:', error)
         // Automatically reconnect after 5 seconds
@@ -73,19 +73,18 @@ export function Console() {
           if (eventSource?.readyState === EventSource.CLOSED) {
             eventSource.close()
             // Restart connection by triggering useEffect
-            setLogs(prev => [...prev])
+            setLogs((prev) => [...prev])
           }
         }, 5000)
       }
-      
+
       eventSource.onopen = () => {
         console.log('SSE connection established')
       }
-      
     } catch (error) {
       console.error('Failed to establish SSE connection:', error)
     }
-    
+
     return () => {
       unsubscribe()
       if (eventSource) {
@@ -107,7 +106,9 @@ export function Console() {
   return (
     <Card className="flex h-full flex-col">
       <CardHeader className="flex flex-shrink-0 flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">Console</CardTitle>
+        <CardTitle className="text-muted-foreground/40 font-mono text-xs font-medium">
+          console
+        </CardTitle>
         <Button
           variant="outline"
           size="sm"
@@ -141,9 +142,9 @@ export function Console() {
                       {log.level.toUpperCase()}
                     </Badge>
                   </div>
-                  <p className="mb-1">{log.message}</p>
+                  <p className="text-muted-foreground mb-1">{log.message}</p>
                   {log.data !== undefined && (
-                    <pre className="bg-muted/50 overflow-x-auto rounded p-2 text-xs">
+                    <pre className="text-muted-foreground/60 bg-muted/50 overflow-x-auto rounded p-2 text-xs">
                       {String(JSON.stringify(log.data, null, 2) || 'undefined')}
                     </pre>
                   )}

@@ -13,14 +13,14 @@ export function determineRouting(
     case 'SQL':
       return {
         action: 'sales_notification',
-        message: `>>> High-priority lead ${contactName} routed to sales team - immediate follow-up recommended (Score: ${score})`,
+        message: `High-priority lead ${contactName} routed to sales team - immediate follow-up recommended (Score: ${score})`,
         priority: 'immediate',
       }
 
     case 'MQL':
       return {
         action: 'marketing_nurture',
-        message: `>>> Marketing qualified lead ${contactName} added to nurture sequence (Score: ${score})`,
+        message: `Marketing qualified lead ${contactName} added to nurture sequence (Score: ${score})`,
         priority: 'standard',
       }
 
@@ -28,7 +28,7 @@ export function determineRouting(
     default:
       return {
         action: 'newsletter_signup',
-        message: `>>> Lead ${contactName} added to newsletter and long-term education flow (Score: ${score})`,
+        message: `Lead ${contactName} added to newsletter and long-term education flow (Score: ${score})`,
         priority: 'low',
       }
   }
