@@ -8,7 +8,7 @@ import {
   intentAnalysis,
   websiteAnalysis,
 } from '@/lib/tools'
-import { openai } from '@ai-sdk/openai'
+// Using Vercel AI Gateway - no provider imports needed
 import { generateObject, generateText, stepCountIs } from 'ai'
 import type { EnrichmentInput } from '@/lib/schemas/enrichment'
 
