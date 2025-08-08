@@ -1,4 +1,5 @@
-import { tool } from 'ai'
+import { perplexity } from '@ai-sdk/perplexity'
+import { generateText, tool } from 'ai'
 import { z } from 'zod'
 
 const DESCRIPTION = `
@@ -10,8 +11,7 @@ const DESCRIPTION = `
 Usage notes:
   - Provide company name and industry context
   - Searches for recent competitive intelligence data (last month)
-  - Returns structured competitive analysis
-  - Results are cached for 3 days as per Oracle recommendations`
+  - Returns structured competitive analysis`
 
 export const competitiveIntelligence = tool({
   name: 'competitiveIntelligence',
@@ -26,91 +26,35 @@ export const competitiveIntelligence = tool({
   }),
   execute: async ({ company, industry, focus }) => {
     try {
-      // For POC: Mock Perplexity Sonar integration since we need API key setup
-      // In production, would use actual Perplexity Sonar API
-      const mockCompetitiveData = {
+      const searchQuery = `${company} ${industry} competitive landscape market position competitors analysis`
+
+      const prompt =
+        focus === 'competitors'
+          ? `Research and identify the main competitors of ${company} in the ${industry} industry. Provide a comprehensive competitive analysis including direct and indirect competitors, their market positioning, and key differentiators.`
+          : focus === 'market-position'
+            ? `Analyze the market position of ${company} in the ${industry} industry. Include market share insights, competitive advantages, and positioning relative to key players.`
+            : `Identify the key differentiators and unique value propositions of ${company} compared to competitors in the ${industry} space. Focus on what sets them apart.`
+
+      const result = await generateText({
+        model: perplexity('sonar-pro'),
+        prompt: `${prompt}\n\nSearch Query: ${searchQuery}`,
+        temperature: 0.3,
+      })
+
+      return {
         company,
         industry,
         focus,
-        analysis: {
-          marketPosition: 'emerging player',
-          competitorCount: 'high',
-          mainCompetitors: [
-            'Stripe (payments)',
-            'Square (SMB focus)',
-            'PayPal (consumer)'
-          ],
-          competitiveLandscape: {
-            marketLeader: 'Stripe',
-            emergingPlayers: [company],
-            marketGrowth: 'high',
-            differentiation: [
-              'focus on SMB market',
-              'simplified onboarding',
-              'industry-specific features'
-            ]
-          },
-          marketInsights: [
-            'Payment processing market growing 15% YoY',
-            'SMB segment underserved by traditional players',
-            'Regulatory changes driving innovation'
-          ]
-        },
-        sources: [
-          'TechCrunch market analysis',
-          'CB Insights competitive map',
-          'Company press releases'
-        ],
-        lastUpdated: new Date().toISOString()
+        analysis: result.text,
+        searchQuery,
+        lastUpdated: new Date().toISOString(),
       }
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800))
-
-      return mockCompetitiveData
     } catch (error) {
-      console.error('Competitive intelligence failed:', error)
-      return { error: 'Failed to fetch competitive intelligence', details: error }
+      console.error('Perplexity competitive intelligence failed:', error)
+      return {
+        error: 'Failed to fetch competitive intelligence',
+        details: error,
+      }
     }
   },
 })
-
-// TODO: Replace with actual Perplexity Sonar implementation
-// export const competitiveIntelligence = tool({
-//   name: 'competitiveIntelligence',
-//   description: DESCRIPTION,
-//   inputSchema: z.object({
-//     company: z.string().describe('Company name to research'),
-//     industry: z.string().describe('Industry or sector context'),
-//     focus: z
-//       .enum(['competitors', 'market-position', 'differentiation'])
-//       .describe('Focus area for competitive research')
-//       .default('competitors'),
-//   }),
-//   execute: async ({ company, industry, focus }) => {
-//     try {
-//       const perplexity = new PerplexityAPI({ apiKey: process.env.PERPLEXITY_API_KEY })
-//       
-//       const searchQuery = `${company} ${industry} competitive landscape market position competitors`
-//       
-//       const result = await perplexity.search({
-//         query: searchQuery,
-//         model: 'sonar-pro',
-//         search_recency: 'month',
-//         web_search: true
-//       })
-//       
-//       return {
-//         company,
-//         industry,
-//         focus,
-//         analysis: result.choices[0].message.content,
-//         sources: result.citations,
-//         lastUpdated: new Date().toISOString()
-//       }
-//     } catch (error) {
-//       console.error('Perplexity competitive intelligence failed:', error)
-//       return { error: 'Failed to fetch competitive intelligence', details: error }
-//     }
-//   },
-// })

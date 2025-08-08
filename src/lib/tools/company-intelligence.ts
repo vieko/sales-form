@@ -30,17 +30,19 @@ export const companyIntelligence = tool({
         funding: `${company} funding round investment raised venture capital`,
         growth: `${company} revenue growth hiring expansion customers`,
         leadership: `${company} CEO founder leadership team hiring executive`,
-        general: `${company} company news recent developments business`
+        general: `${company} company news recent developments business`,
       }
 
       const { results } = await exa.searchAndContents(searchQueries[focus], {
         type: 'neural',
         numResults: 5,
-        startPublishedDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(), // Last 90 days
+        startPublishedDate: new Date(
+          Date.now() - 90 * 24 * 60 * 60 * 1000,
+        ).toISOString(), // Last 90 days
         text: {
           maxCharacters: 1000,
-          includeHtmlTags: false
-        }
+          includeHtmlTags: false,
+        },
       })
 
       return results.map((result) => ({
@@ -49,7 +51,7 @@ export const companyIntelligence = tool({
         content: result.text?.slice(0, 800) || '',
         publishedDate: result.publishedDate,
         score: result.score,
-        highlights: []
+        highlights: [],
       }))
     } catch (error) {
       console.error('Company intelligence search failed:', error)

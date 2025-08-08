@@ -76,25 +76,10 @@ Implement a scoring system that:
 
 ### 4. Background Processing
 
-- Use Vercel Cron jobs to process enrichment queue
+- Use Inngest to process enrichment queue
 - Implement retry logic for failed enrichments
 - Add rate limiting and cost tracking
 - Cache enrichment results intelligently (TTL based on data type)
-
-### 5. Real-time Updates
-
-- Implement Server-Sent Events for status updates
-- Show enrichment progress to users who stay on page
-- Display final score and classification when complete
-
-### 6. Monitoring & Analytics
-
-Create endpoints to track:
-
-- Enrichment success rates per tool
-- Average enrichment time and costs
-- Score distribution and conversion rates
-- False positive/negative rates for classification
 
 ## Implementation Steps
 
@@ -128,28 +113,12 @@ Create endpoints to track:
 
 ### Phase 4: Background Processing
 
-1. Set up Vercel Cron for queue processing
+1. Set up Inngest for queue processing
 2. Build job queue system for enrichment tasks
 3. Implement retry logic with exponential backoff
 4. Add rate limiting per API provider
 5. Track costs per enrichment
 6. Build intelligent caching layer with TTL
-
-### Phase 5: Real-time Features
-
-1. Implement Server-Sent Events endpoint
-2. Build status streaming during enrichment
-3. Create progress indicators for each stage
-4. Add live score updates
-5. Show final classification with confidence level
-
-### Phase 6: Analytics & Optimization
-
-1. Build analytics endpoints for monitoring
-2. Track tool performance and costs
-3. Measure classification accuracy
-4. Implement feedback loop for score adjustment
-5. Add cost optimization logic
 
 ## Key Code Patterns to Follow
 
@@ -191,34 +160,6 @@ Create endpoints to track:
 - Enable web search for competitive intelligence
 - Set search_recency to "month" for recent data
 - Cache results for 3 days
-
-## Success Criteria
-
-- Enrichment completes within 30 seconds
-- Cost per lead under $0.50
-- SQL classification accuracy >80%
-- Zero data loss even with API failures
-- Real-time progress updates for waiting users
-- Automatic retry for failed enrichments
-- Cost tracking accurate to the cent
-
-## Error Handling Requirements
-
-- Implement exponential backoff for retries
-- Log all errors with full context
-- Fallback to partial enrichment if some APIs fail
-- Never lose lead data due to enrichment failure
-- Alert on repeated failures (>3 for same lead)
-- Gracefully degrade features when APIs are down
-
-## Performance Targets
-
-- Initial lead capture: <100ms
-- Enrichment start: <5 seconds
-- Full enrichment: <30 seconds
-- Real-time updates: <2 second latency
-- Database queries: <50ms
-- Cache hit rate: >60%
 
 Please build this system incrementally, starting with the database schema, then
 adding the AI enrichment agent, followed by the scoring system, and finally the
