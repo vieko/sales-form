@@ -5,23 +5,29 @@ import { eq } from 'drizzle-orm'
 import { generateMockBehavioralData } from '@/lib/utils'
 import { determineRouting } from '@/lib/routing/router'
 import { serverLogger } from '@/lib/server-logger'
+import { enrichLead } from '@/lib/enrichment/enrichment-engine'
 import type { EnrichmentInput } from '@/lib/schemas/enrichment'
 
-export const enrichLead = inngest.createFunction(
+export const enrichLeadFunction = inngest.createFunction(
   { id: 'enrich-lead', name: 'Enrich Lead Submission' },
   { event: 'lead/submitted' },
   async ({ event, step }) => {
     console.log('=== EVENT DATA ===', JSON.stringify(event.data, null, 2))
-    
+
     // Handle both normal events and re-run events (where data is nested)
-    const submissionId = event.data.submissionId || event.data.data?.submissionId
+    const submissionId =
+      event.data.submissionId || event.data.data?.submissionId
 
     if (!submissionId) {
-      console.error('=== RERUN ERROR === submissionId is undefined in event data')
+      console.error(
+        '=== RERUN ERROR === submissionId is undefined in event data',
+      )
       return {
         success: false,
-        error: 'Cannot process event: submissionId is undefined. This appears to be a failed event from before the fix was applied.',
-        message: 'Event skipped due to missing submissionId. Future submissions will not have this issue.',
+        error:
+          'Cannot process event: submissionId is undefined. This appears to be a failed event from before the fix was applied.',
+        message:
+          'Event skipped due to missing submissionId. Future submissions will not have this issue.',
       }
     }
 
@@ -58,30 +64,10 @@ export const enrichLead = inngest.createFunction(
       },
     )
 
-    const enrichmentResult = await step.run('call-enrichment-api', async () => {
-      console.log('=== CALL === /api/enrich endpoint...')
+    const enrichmentResult = await step.run('call-enrichment-engine', async () => {
+      console.log('=== CALL === enrichment engine directly...')
 
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-      
-      const response = await fetch(
-        `${baseUrl}/api/enrich`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(enrichmentInput),
-        },
-      )
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(
-          `Enrichment API failed: ${response.status} ${errorText}`,
-        )
-      }
-
-      const result = await response.json()
+      const result = await enrichLead(enrichmentInput)
       console.log(
         `=== RESULT === enrichment completed: ${result.gatheringSteps} steps, ${result.toolCalls} tool calls`,
       )
@@ -143,10 +129,16 @@ export const enrichLead = inngest.createFunction(
               privacyPolicy: submission.privacyPolicy,
               behavioralData: enrichmentInput.behavioralData,
               leadScore: Math.round(enrichmentData.scoring.overallScore),
-              firmographicScore: Math.round(enrichmentData.scoring.firmographicScore),
-              behavioralScore: Math.round(enrichmentData.scoring.behavioralScore),
+              firmographicScore: Math.round(
+                enrichmentData.scoring.firmographicScore,
+              ),
+              behavioralScore: Math.round(
+                enrichmentData.scoring.behavioralScore,
+              ),
               intentScore: Math.round(enrichmentData.scoring.intentScore),
-              technographicScore: Math.round(enrichmentData.scoring.technographicScore),
+              technographicScore: Math.round(
+                enrichmentData.scoring.technographicScore,
+              ),
               classification: enrichmentData.scoring.classification,
               classificationConfidence:
                 enrichmentData.scoring.classificationConfidence,
@@ -178,11 +170,11 @@ export const enrichLead = inngest.createFunction(
           leadId: storageResult.leadId,
           score: storageResult.score,
           classification: storageResult.classification,
-          contactName: submission.contactName
-        }
+          contactName: submission.contactName,
+        },
       )
     })
-    
+
     // Trigger routing after enrichment completes
     await step.sendEvent('trigger-routing', {
       name: 'lead/enriched',
@@ -227,14 +219,14 @@ export const routeLead = inngest.createFunction(
           .where(eq(leads.id, leadId))
 
         console.log(`=== ROUTING === ${routingDecision.message}`)
-        
+
         // Log to UI console
         await serverLogger.success(routingDecision.message, {
           leadId,
           classification,
           score,
           action: routingDecision.action,
-          priority: routingDecision.priority
+          priority: routingDecision.priority,
         })
 
         return {
@@ -257,13 +249,13 @@ export const routeLead = inngest.createFunction(
       )
       console.log(`=== NOTIFICATION === Priority: ${routingDecision.priority}`)
       let notificationDetails: string[] = []
-      
+
       switch (routingDecision.action) {
         case 'sales_notification':
           notificationDetails = [
             'Slack notification to sales team',
-            'High-priority email to sales reps', 
-            'CRM fast-track workflow'
+            'High-priority email to sales reps',
+            'CRM fast-track workflow',
           ]
           console.log('WOULD SEND: Slack notification to sales team')
           console.log('WOULD SEND: High-priority email to sales reps')
@@ -272,7 +264,7 @@ export const routeLead = inngest.createFunction(
         case 'marketing_nurture':
           notificationDetails = [
             'Marketing automation sequence',
-            'Lead scoring workflow'
+            'Lead scoring workflow',
           ]
           console.log('WOULD TRIGGER: Marketing automation sequence')
           console.log('WOULD ADD TO: Lead scoring workflow')
@@ -280,20 +272,20 @@ export const routeLead = inngest.createFunction(
         case 'newsletter_signup':
           notificationDetails = [
             'Newsletter list signup',
-            'Welcome email sequence'
+            'Welcome email sequence',
           ]
           console.log('WOULD ADD TO: Newsletter list')
           console.log('WOULD TRIGGER: Welcome email sequence')
           break
       }
-      
+
       // Log to UI console
       await serverLogger.info(
         `Triggered ${notificationDetails.length} ${routingDecision.action} actions`,
-        { 
+        {
           actions: notificationDetails,
-          priority: routingDecision.priority 
-        }
+          priority: routingDecision.priority,
+        },
       )
 
       return { notificationsSent: true }
