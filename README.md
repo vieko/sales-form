@@ -4,6 +4,9 @@ An intelligent lead enrichment and scoring system built with Next.js 15 that
 automatically enriches, scores, and classifies sales leads using AI agents and
 modern web tools.
 
+[Planning Board](https://www.figma.com/board/ilLYIgWHEmz0u8Kx2civhI/modern-sales-form-using-ai-sdk?node-id=3-385&t=rrguyBs8zI7p7cao-1)
+
+
 ## Features
 
 - **Smart Lead Capture**: Responsive contact form with real-time validation
@@ -56,8 +59,6 @@ Weighted scoring algorithm (0-100 points):
 - **UNQUALIFIED** (Score <40): Poor fit → Newsletter + education
 
 ### Resources
-- [Planning Board](https://www.figma.com/board/ilLYIgWHEmz0u8Kx2civhI/modern-sales-form-using-ai-sdk?node-id=3-385&t=rrguyBs8zI7p7cao-1)
-
 - [HubSpot's Lead Scoring Guide (2025)](https://blog.hubspot.com/marketing/lead-scoring-instructions)
 
 - [Gartner's B2B Lead Scoring Using Buyer Intent Signals](https://www.gartner.com/en/digital-markets/insights/lead-scoring-intent-signals)
