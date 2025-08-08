@@ -1,11 +1,10 @@
-## POC Modern Sales Form: Lead Triage + Enrichment
+## Modern Contact Sales Form
 
 An intelligent lead enrichment and scoring system built with Next.js 15 that
 automatically enriches, scores, and classifies sales leads using AI agents and
 modern web tools.
 
 [Planning Board](https://www.figma.com/board/ilLYIgWHEmz0u8Kx2civhI/modern-sales-form-using-ai-sdk?node-id=3-385&t=rrguyBs8zI7p7cao-1)
-
 
 ## Features
 
@@ -33,7 +32,8 @@ modern web tools.
 
 ### Lead Enrichment Pipeline
 
-`Contact Form` → `Immediate Storage` → `Background Enrichment` → `Scoring` → `Classification` → `Routing`
+`Contact Form` → `Immediate Storage` → `Background Enrichment` → `Scoring` →
+`Classification` → `Routing`
 
 ### Data Sources
 
@@ -59,6 +59,7 @@ Weighted scoring algorithm (0-100 points):
 - **UNQUALIFIED** (Score <40): Poor fit → Newsletter + education
 
 ### Resources
+
 - [HubSpot's Lead Scoring Guide (2025)](https://blog.hubspot.com/marketing/lead-scoring-instructions)
 
 - [Gartner's B2B Lead Scoring Using Buyer Intent Signals](https://www.gartner.com/en/digital-markets/insights/lead-scoring-intent-signals)
