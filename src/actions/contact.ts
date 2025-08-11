@@ -65,6 +65,7 @@ export async function submitContact(
     )
 
     // ==> trigger lead enrichment via Inngest
+    
     await inngest
       .send({
         name: 'lead/submitted',
@@ -80,7 +81,6 @@ export async function submitContact(
         }, sessionId)
       })
       .catch((error) => {
-        console.error('Failed to queue enrichment:', error)
         logger.error('Failed to start enrichment pipeline', {
           submissionId: submission.id,
           error: error.message,

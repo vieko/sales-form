@@ -72,6 +72,7 @@ class Logger {
     return []
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   subscribe(listener: (logs: LogEntry[]) => void) {
     console.warn('logger.subscribe() is deprecated - use polling instead')
     return () => {}

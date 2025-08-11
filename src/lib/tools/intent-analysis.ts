@@ -96,7 +96,10 @@ export const intentAnalysis = tool({
         schema: intentAnalysisSchema,
         temperature: 0.2, // consistency
       })
-      return result.object
+      return {
+        ...result.object,
+        usage: result.usage, // Include usage data for logging
+      }
     } catch (error) {
       console.error('Intent analysis failed:', error)
       return {

@@ -2,6 +2,7 @@ import { firecrawl } from '@/lib/firecrawl'
 import type { CrawlParams } from '@mendable/firecrawl-js'
 import { tool } from 'ai'
 import { z } from 'zod'
+import { CostCalculators } from '@/lib/costs'
 
 const DESCRIPTION = `
 - Analyzes company website using Firecrawl API
@@ -48,7 +49,21 @@ export const websiteAnalysis = tool({
         },
       }
       const result = await firecrawl.crawlUrl(urlToCrawl, crawlParams)
-      return result
+      
+      // Add cost tracking using centralized calculator
+      const pagesProcessed = (result && 'data' in result && Array.isArray(result.data)) 
+        ? result.data.length 
+        : maxPages
+      const estimatedCost = CostCalculators.firecrawl(pagesProcessed)
+      
+      return {
+        ...result,
+        costTracking: {
+          estimatedCost,
+          pagesProcessed,
+          apiProvider: 'firecrawl'
+        }
+      }
     } catch (error) {
       console.error('Firecrawl website analysis failed:', error)
       return { error: 'Failed to analyze website', details: error }

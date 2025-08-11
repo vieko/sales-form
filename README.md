@@ -4,6 +4,8 @@ An intelligent lead enrichment and scoring system built with Next.js 15 that
 automatically enriches, scores, and classifies sales leads using AI agents and
 modern web tools.
 
+[Planning Board](https://www.figma.com/board/ilLYIgWHEmz0u8Kx2civhI/modern-sales-form-using-ai-sdk?node-id=3-385&t=rrguyBs8zI7p7cao-1)
+
 ## Features
 
 - **Smart Lead Capture**: Responsive contact form with real-time validation

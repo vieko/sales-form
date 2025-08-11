@@ -7,10 +7,19 @@ import {
   competitiveIntelligence,
   intentAnalysis,
   websiteAnalysis,
-} from '@/lib/tools'
+} from '@/lib/tools/instrumented'
 // Using Vercel AI Gateway - no provider imports needed
 import { generateObject, generateText, stepCountIs } from 'ai'
 import type { EnrichmentInput } from '@/lib/schemas/enrichment'
+import { 
+  startEnrichmentLog,
+  completeEnrichmentLog,
+  failEnrichmentLog,
+  logToolCalls,
+  type EnrichmentContext
+} from '@/lib/enrichment-logger'
+import { CostCalculators } from '@/lib/costs'
+import { logger } from '@/lib/logger'
 
 const DATA_GATHERING_PROMPT = `
 You are an expert lead enrichment researcher. Your job is to intelligently gather data about a company and lead using the available tools.
@@ -49,8 +58,13 @@ CLASSIFICATION RULES:
 Analyze the provided tool results and original lead data to create accurate, comprehensive enrichment with detailed reasoning for all scores.
 `
 
-export async function enrichLead(input: EnrichmentInput) {
+export async function enrichLead(input: EnrichmentInput, sessionId?: string) {
   const validatedInput = enrichmentInputSchema.parse(input)
+
+  // Create enrichment context for this operation
+  // Note: leadId and companyId will be undefined initially since the records don't exist yet
+  // They will be updated later via updateEnrichmentLogsWithIds()
+  const enrichmentContext: EnrichmentContext = {}
 
   const domain = new URL(validatedInput.companyWebsite).hostname.replace(
     'www.',
@@ -83,27 +97,72 @@ TASK: Gather comprehensive data about this lead using the available tools. Be st
 
   console.log('=== STEP 1 === Gathering enrichment data with tools...')
 
-  const dataGathering = await generateText({
-    model: 'openai/gpt-4o',
-    system: DATA_GATHERING_PROMPT,
-    prompt: leadContext,
-    tools: {
-      companyIntelligence,
-      websiteAnalysis,
-      competitiveIntelligence,
-      intentAnalysis,
+  // Log the main data gathering operation
+  const dataGatheringLogId = await startEnrichmentLog({
+    context: enrichmentContext,
+    provider: 'openai',
+    operation: 'data-gathering',
+    requestData: { 
+      submissionId: validatedInput.leadId, // Track which submission this belongs to
+      leadContext, 
+      tools: ['companyIntelligence', 'websiteAnalysis', 'competitiveIntelligence', 'intentAnalysis'] 
     },
-    toolChoice: 'auto',
-    stopWhen: stepCountIs(6), // Reasonable limit for data gathering
   })
 
-  console.log(
-    `=== STEP 1 === completed: ${dataGathering.steps.length} steps, ${dataGathering.toolCalls.length} tool calls`,
-  )
+  try {
+    const dataGathering = await generateText({
+      model: 'openai/gpt-4o',
+      system: DATA_GATHERING_PROMPT,
+      prompt: leadContext,
+      tools: {
+        companyIntelligence,
+        websiteAnalysis,
+        competitiveIntelligence,
+        intentAnalysis,
+      },
+      toolChoice: 'auto',
+      stopWhen: stepCountIs(6), // Reasonable limit for data gathering
+    })
 
-  console.log('=== STEP 2 === Synthesizing enrichment data...')
+    // Log individual tool calls with detailed cost tracking
+    // Note: Using toolResults instead of toolCalls as toolCalls may be empty in some AI SDK versions
+    const toolCallsToLog = dataGathering.toolResults || dataGathering.toolCalls
+    if (toolCallsToLog.length > 0) {
+      await logToolCalls(enrichmentContext, toolCallsToLog, dataGatheringLogId)
+    }
 
-  const synthesisPrompt = `
+    await completeEnrichmentLog({
+      logId: dataGatheringLogId,
+      responseData: {
+        steps: dataGathering.steps.length,
+        toolCalls: dataGathering.toolCalls.length,
+        text: dataGathering.text.slice(0, 500) + '...',
+      },
+      tokensUsed: dataGathering.usage?.totalTokens,
+      cost: dataGathering.usage?.totalTokens ? CostCalculators.openai(dataGathering.usage.totalTokens) : undefined,
+    })
+
+    console.log(
+      `=== STEP 1 === completed: ${dataGathering.steps.length} steps, ${dataGathering.toolCalls.length} tool calls`,
+    )
+
+    // Log data gathering completion with cost info
+    if (sessionId && dataGathering.usage?.totalTokens) {
+      const gatheringCost = CostCalculators.openai(dataGathering.usage.totalTokens)
+      logger.info(
+        `Data gathering completed: ${dataGathering.toolCalls.length} tool calls`,
+        {
+          stepsCost: `$${gatheringCost.toFixed(4)}`,
+          tokensUsed: dataGathering.usage.totalTokens,
+          toolsUsed: dataGathering.toolCalls.length,
+          status: 'proceeding to synthesis'
+        },
+        sessionId
+      )
+    }
+
+
+    const synthesisPrompt = `
 ORIGINAL LEAD DATA:
 ${leadContext}
 
@@ -117,22 +176,77 @@ SYNTHESIS TASK:
 Based on the original lead data and the gathered tool results above, create comprehensive lead enrichment with accurate scoring and classification. Use the actual data from the tool results to inform your analysis, not assumptions.
 `
 
-  const enrichmentResult = await generateObject({
-    model: 'openai/gpt-4o',
-    system: SYNTHESIS_PROMPT,
-    prompt: synthesisPrompt,
-    schema: enrichmentResponseSchema,
-    temperature: 0.2, // For consistency
-  })
+    console.log('=== STEP 2 === Synthesizing enrichment data...')
 
-  console.log('=== STEP 2 === Enrichment synthesis completed')
+    // Log the synthesis operation
+    const synthesisLogId = await startEnrichmentLog({
+      context: enrichmentContext,
+      provider: 'openai',
+      operation: 'enrichment-synthesis',
+      requestData: { 
+        submissionId: validatedInput.leadId, // Track which submission this belongs to
+        synthesisPrompt: synthesisPrompt.slice(0, 500) + '...' 
+      },
+    })
 
-  return {
-    success: true,
-    data: enrichmentResult.object,
-    domain,
-    gatheringSteps: dataGathering.steps.length,
-    toolCalls: dataGathering.toolCalls.length,
-    gatheringSummary: dataGathering.text.slice(0, 200) + '...',
+    try {
+      const enrichmentResult = await generateObject({
+        model: 'openai/gpt-4o',
+        system: SYNTHESIS_PROMPT,
+        prompt: synthesisPrompt,
+        schema: enrichmentResponseSchema,
+        temperature: 0.2, // For consistency
+      })
+
+      await completeEnrichmentLog({
+        logId: synthesisLogId,
+        responseData: {
+          classification: enrichmentResult.object.scoring.classification,
+          overallScore: enrichmentResult.object.scoring.overallScore,
+        },
+        tokensUsed: enrichmentResult.usage?.totalTokens,
+        cost: enrichmentResult.usage?.totalTokens ? CostCalculators.openai(enrichmentResult.usage.totalTokens) : undefined,
+      })
+
+      console.log('=== STEP 2 === Enrichment synthesis completed')
+
+      // Log synthesis completion with cost info
+      if (sessionId && enrichmentResult.usage?.totalTokens) {
+        const synthesisCost = CostCalculators.openai(enrichmentResult.usage.totalTokens)
+        logger.info(
+          `Enrichment synthesis completed: ${enrichmentResult.object.scoring.classification}`,
+          {
+            synthesisCost: `$${synthesisCost.toFixed(4)}`,
+            tokensUsed: enrichmentResult.usage.totalTokens,
+            finalScore: enrichmentResult.object.scoring.overallScore,
+            classification: enrichmentResult.object.scoring.classification
+          },
+          sessionId
+        )
+      }
+
+      
+      return {
+        success: true,
+        data: enrichmentResult.object,
+        domain,
+        gatheringSteps: dataGathering.steps.length,
+        toolCalls: dataGathering.toolCalls.length,
+        gatheringSummary: dataGathering.text.slice(0, 200) + '...',
+      }
+    } catch (synthesisError) {
+      await failEnrichmentLog({
+        logId: synthesisLogId,
+        errorMessage: synthesisError instanceof Error ? synthesisError.message : String(synthesisError),
+      })
+      throw synthesisError
+    }
+  } catch (dataGatheringError) {
+    await failEnrichmentLog({
+      logId: dataGatheringLogId,
+      errorMessage: dataGatheringError instanceof Error ? dataGatheringError.message : String(dataGatheringError),
+    })
+    
+    throw dataGatheringError
   }
 }
