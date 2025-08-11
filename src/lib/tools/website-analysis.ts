@@ -51,7 +51,9 @@ export const websiteAnalysis = tool({
       const result = await firecrawl.crawlUrl(urlToCrawl, crawlParams)
       
       // Add cost tracking using centralized calculator
-      const pagesProcessed = result?.data?.length || maxPages
+      const pagesProcessed = (result && 'data' in result && Array.isArray(result.data)) 
+        ? result.data.length 
+        : maxPages
       const estimatedCost = CostCalculators.firecrawl(pagesProcessed)
       
       return {

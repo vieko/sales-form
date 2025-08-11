@@ -1,14 +1,13 @@
 import { db } from '@/db/drizzle'
 import { enrichmentLogs } from '@/db/schemas'
 import type { NewEnrichmentLog } from '@/db/schemas/enrichment-logs'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { CostCalculators } from '@/lib/costs'
 
 export type EnrichmentProvider = 'openai' | 'perplexity' | 'exa' | 'firecrawl'
 
 export interface StartLogParams {
-  leadId?: string
-  companyId?: string
+  context: EnrichmentContext
   provider: EnrichmentProvider
   operation: string
   requestData: unknown
@@ -34,8 +33,8 @@ export interface FailLogParams {
 export async function startEnrichmentLog(params: StartLogParams): Promise<string> {
   try {
     const logData: NewEnrichmentLog = {
-      leadId: params.leadId || null,
-      companyId: params.companyId || null,
+      leadId: params.context.leadId || null,
+      companyId: params.context.companyId || null,
       provider: params.provider,
       operation: params.operation,
       requestData: params.requestData as object,
@@ -134,31 +133,6 @@ export interface EnrichmentContext {
   companyId?: string
 }
 
-// Global context for the current enrichment session
-let currentEnrichmentContext: EnrichmentContext = {}
-
-/**
- * Set the enrichment context for the current session
- * This should be called at the start of each enrichment
- */
-export function setEnrichmentContext(context: EnrichmentContext): void {
-  currentEnrichmentContext = context
-}
-
-/**
- * Clear the enrichment context
- */
-export function clearEnrichmentContext(): void {
-  currentEnrichmentContext = {}
-}
-
-/**
- * Get the current enrichment context
- */
-export function getEnrichmentContext(): EnrichmentContext {
-  return currentEnrichmentContext
-}
-
 /**
  * Update enrichment logs to link them to the final leadId/companyId
  * This is useful when enrichment happens before database records are created
@@ -169,13 +143,16 @@ export async function updateEnrichmentLogsWithIds(params: {
   companyId: string
 }): Promise<void> {
   try {
+
+    // Update logs with the submissionId in requestData (since leadId is null initially)
     await db
       .update(enrichmentLogs)
       .set({
         leadId: params.leadId,
         companyId: params.companyId,
       })
-      .where(eq(enrichmentLogs.leadId, params.submissionId)) // Update logs that used submissionId as temporary leadId
+      .where(sql`${enrichmentLogs.requestData}->>'submissionId' = ${params.submissionId}`)
+
   } catch (error) {
     console.error('Failed to update enrichment logs with final IDs:', error)
   }
@@ -282,71 +259,81 @@ export async function getRealtimeEnrichmentCosts(leadId: string): Promise<{
 }
 
 /**
- * Utility function to wrap any AI tool with logging
- * Uses function composition pattern for clean integration
+ * Tool name to provider mapping for automatic logging
  */
-export function withEnrichmentLogging<T extends (...args: unknown[]) => Promise<unknown>>(
-  tool: T,
-  provider: EnrichmentProvider,
-  operation: string,
-): T {
-  return (async (...args: Parameters<T>) => {
-    const context = getEnrichmentContext()
+const TOOL_PROVIDER_MAP: Record<string, EnrichmentProvider> = {
+  companyIntelligence: 'exa',
+  websiteAnalysis: 'firecrawl',
+  competitiveIntelligence: 'perplexity',
+  intentAnalysis: 'openai',
+}
+
+/**
+ * Log tool calls from AI SDK generateText result
+ */
+export async function logToolCalls(
+  context: EnrichmentContext,
+  toolCalls: Array<{
+    toolCallId: string
+    toolName: string
+    input: unknown
+    result?: unknown
+  }>,
+  mainLogId?: string
+): Promise<void> {
+  const logPromises = toolCalls.map(async (toolCall) => {
+    const provider = TOOL_PROVIDER_MAP[toolCall.toolName] || 'openai'
+    
     const logId = await startEnrichmentLog({
-      leadId: context.leadId,
-      companyId: context.companyId,
+      context,
       provider,
-      operation,
-      requestData: args,
+      operation: toolCall.toolName,
+      requestData: {
+        toolCallId: toolCall.toolCallId,
+        input: toolCall.input,
+        parentLogId: mainLogId,
+      },
     })
 
     try {
-      const result = await tool(...args)
-      
-      // Extract token/cost info from different response formats
-      let tokensUsed: number | undefined
+      // Calculate cost based on the tool result
       let cost: number | undefined
-      
-      // AI SDK responses (OpenAI, Perplexity)
-      if (result?.usage?.totalTokens) {
-        tokensUsed = result.usage.totalTokens
-        
-        // Calculate cost using centralized cost calculators
-        if (provider === 'openai' && tokensUsed) {
-          cost = CostCalculators.openai(tokensUsed)
-        } else if (provider === 'perplexity' && tokensUsed) {
-          cost = CostCalculators.perplexity(tokensUsed)
+      let tokensUsed: number | undefined
+
+      const result = toolCall.result
+      if (result && typeof result === 'object') {
+        // Exa API results
+        if ('estimatedCost' in result) {
+          cost = result.estimatedCost as number
+        }
+        // Firecrawl results  
+        else if ('costTracking' in result && result.costTracking && typeof result.costTracking === 'object' && 'estimatedCost' in result.costTracking) {
+          cost = result.costTracking.estimatedCost as number
+        }
+        // Usage-based cost calculation
+        else if ('usage' in result && result.usage && typeof result.usage === 'object' && 'totalTokens' in result.usage) {
+          tokensUsed = result.usage.totalTokens as number
+          if (provider === 'openai' && tokensUsed) {
+            cost = CostCalculators.openai(tokensUsed)
+          } else if (provider === 'perplexity' && tokensUsed) {
+            cost = CostCalculators.perplexity(tokensUsed)
+          }
         }
       }
-      
-      // External API cost estimates
-      if (result?.estimatedCost) {
-        cost = result.estimatedCost // Exa
-      } else if (result?.costTracking?.estimatedCost) {
-        cost = result.costTracking.estimatedCost // Firecrawl
-      }
-      
-      // Fallback token extraction
-      if (!tokensUsed && result?.tokens) {
-        tokensUsed = result.tokens
-      }
-      
+
       await completeEnrichmentLog({
         logId,
-        responseData: result,
+        responseData: toolCall.result,
         tokensUsed,
         cost,
       })
-      
-      return result
     } catch (error) {
       await failEnrichmentLog({
         logId,
-        errorMessage: error instanceof Error ? error.message : String(error),
+        errorMessage: error instanceof Error ? error.message : 'Unknown error in tool call logging',
       })
-      
-      // Re-throw the error to maintain the original behavior
-      throw error
     }
-  }) as T
+  })
+
+  await Promise.allSettled(logPromises)
 }

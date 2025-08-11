@@ -12,11 +12,11 @@ import {
 import { generateObject, generateText, stepCountIs } from 'ai'
 import type { EnrichmentInput } from '@/lib/schemas/enrichment'
 import { 
-  setEnrichmentContext, 
-  clearEnrichmentContext,
   startEnrichmentLog,
   completeEnrichmentLog,
-  failEnrichmentLog
+  failEnrichmentLog,
+  logToolCalls,
+  type EnrichmentContext
 } from '@/lib/enrichment-logger'
 import { CostCalculators } from '@/lib/costs'
 import { logger } from '@/lib/logger'
@@ -61,11 +61,10 @@ Analyze the provided tool results and original lead data to create accurate, com
 export async function enrichLead(input: EnrichmentInput, sessionId?: string) {
   const validatedInput = enrichmentInputSchema.parse(input)
 
-  // Set enrichment context for logging
-  setEnrichmentContext({
-    leadId: validatedInput.leadId,
-    companyId: validatedInput.companyId,
-  })
+  // Create enrichment context for this operation
+  // Note: leadId and companyId will be undefined initially since the records don't exist yet
+  // They will be updated later via updateEnrichmentLogsWithIds()
+  const enrichmentContext: EnrichmentContext = {}
 
   const domain = new URL(validatedInput.companyWebsite).hostname.replace(
     'www.',
@@ -100,11 +99,14 @@ TASK: Gather comprehensive data about this lead using the available tools. Be st
 
   // Log the main data gathering operation
   const dataGatheringLogId = await startEnrichmentLog({
-    leadId: validatedInput.leadId,
-    companyId: validatedInput.companyId,
+    context: enrichmentContext,
     provider: 'openai',
     operation: 'data-gathering',
-    requestData: { leadContext, tools: ['companyIntelligence', 'websiteAnalysis', 'competitiveIntelligence', 'intentAnalysis'] },
+    requestData: { 
+      submissionId: validatedInput.leadId, // Track which submission this belongs to
+      leadContext, 
+      tools: ['companyIntelligence', 'websiteAnalysis', 'competitiveIntelligence', 'intentAnalysis'] 
+    },
   })
 
   try {
@@ -121,6 +123,13 @@ TASK: Gather comprehensive data about this lead using the available tools. Be st
       toolChoice: 'auto',
       stopWhen: stepCountIs(6), // Reasonable limit for data gathering
     })
+
+    // Log individual tool calls with detailed cost tracking
+    // Note: Using toolResults instead of toolCalls as toolCalls may be empty in some AI SDK versions
+    const toolCallsToLog = dataGathering.toolResults || dataGathering.toolCalls
+    if (toolCallsToLog.length > 0) {
+      await logToolCalls(enrichmentContext, toolCallsToLog, dataGatheringLogId)
+    }
 
     await completeEnrichmentLog({
       logId: dataGatheringLogId,
@@ -152,7 +161,6 @@ TASK: Gather comprehensive data about this lead using the available tools. Be st
       )
     }
 
-    console.log('=== STEP 2 === Synthesizing enrichment data...')
 
     const synthesisPrompt = `
 ORIGINAL LEAD DATA:
@@ -168,13 +176,17 @@ SYNTHESIS TASK:
 Based on the original lead data and the gathered tool results above, create comprehensive lead enrichment with accurate scoring and classification. Use the actual data from the tool results to inform your analysis, not assumptions.
 `
 
+    console.log('=== STEP 2 === Synthesizing enrichment data...')
+
     // Log the synthesis operation
     const synthesisLogId = await startEnrichmentLog({
-      leadId: validatedInput.leadId,
-      companyId: validatedInput.companyId,
+      context: enrichmentContext,
       provider: 'openai',
       operation: 'enrichment-synthesis',
-      requestData: { synthesisPrompt: synthesisPrompt.slice(0, 500) + '...' },
+      requestData: { 
+        submissionId: validatedInput.leadId, // Track which submission this belongs to
+        synthesisPrompt: synthesisPrompt.slice(0, 500) + '...' 
+      },
     })
 
     try {
@@ -213,9 +225,7 @@ Based on the original lead data and the gathered tool results above, create comp
         )
       }
 
-      // Clear context at the end
-      clearEnrichmentContext()
-
+      
       return {
         success: true,
         data: enrichmentResult.object,
@@ -237,8 +247,6 @@ Based on the original lead data and the gathered tool results above, create comp
       errorMessage: dataGatheringError instanceof Error ? dataGatheringError.message : String(dataGatheringError),
     })
     
-    // Clear context on error
-    clearEnrichmentContext()
     throw dataGatheringError
   }
 }
