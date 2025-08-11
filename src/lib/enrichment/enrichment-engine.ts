@@ -19,6 +19,7 @@ import {
   failEnrichmentLog
 } from '@/lib/enrichment-logger'
 import { CostCalculators } from '@/lib/costs'
+import { logger } from '@/lib/logger'
 
 const DATA_GATHERING_PROMPT = `
 You are an expert lead enrichment researcher. Your job is to intelligently gather data about a company and lead using the available tools.
@@ -57,7 +58,7 @@ CLASSIFICATION RULES:
 Analyze the provided tool results and original lead data to create accurate, comprehensive enrichment with detailed reasoning for all scores.
 `
 
-export async function enrichLead(input: EnrichmentInput) {
+export async function enrichLead(input: EnrichmentInput, sessionId?: string) {
   const validatedInput = enrichmentInputSchema.parse(input)
 
   // Set enrichment context for logging
@@ -136,6 +137,21 @@ TASK: Gather comprehensive data about this lead using the available tools. Be st
       `=== STEP 1 === completed: ${dataGathering.steps.length} steps, ${dataGathering.toolCalls.length} tool calls`,
     )
 
+    // Log data gathering completion with cost info
+    if (sessionId && dataGathering.usage?.totalTokens) {
+      const gatheringCost = CostCalculators.openai(dataGathering.usage.totalTokens)
+      logger.info(
+        `Data gathering completed: ${dataGathering.toolCalls.length} tool calls`,
+        {
+          stepsCost: `$${gatheringCost.toFixed(4)}`,
+          tokensUsed: dataGathering.usage.totalTokens,
+          toolsUsed: dataGathering.toolCalls.length,
+          status: 'proceeding to synthesis'
+        },
+        sessionId
+      )
+    }
+
     console.log('=== STEP 2 === Synthesizing enrichment data...')
 
     const synthesisPrompt = `
@@ -181,6 +197,21 @@ Based on the original lead data and the gathered tool results above, create comp
       })
 
       console.log('=== STEP 2 === Enrichment synthesis completed')
+
+      // Log synthesis completion with cost info
+      if (sessionId && enrichmentResult.usage?.totalTokens) {
+        const synthesisCost = CostCalculators.openai(enrichmentResult.usage.totalTokens)
+        logger.info(
+          `Enrichment synthesis completed: ${enrichmentResult.object.scoring.classification}`,
+          {
+            synthesisCost: `$${synthesisCost.toFixed(4)}`,
+            tokensUsed: enrichmentResult.usage.totalTokens,
+            finalScore: enrichmentResult.object.scoring.overallScore,
+            classification: enrichmentResult.object.scoring.classification
+          },
+          sessionId
+        )
+      }
 
       // Clear context at the end
       clearEnrichmentContext()

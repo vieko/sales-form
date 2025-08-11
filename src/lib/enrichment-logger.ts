@@ -182,6 +182,106 @@ export async function updateEnrichmentLogsWithIds(params: {
 }
 
 /**
+ * Get cost summary for a specific enrichment session
+ */
+export async function getEnrichmentCostSummary(leadId: string): Promise<{
+  totalCost: number
+  operationsCount: number
+  costByProvider: Record<string, { cost: number; operations: number }>
+  topOperation: { operation: string; cost: number } | null
+}> {
+  try {
+    const logs = await db
+      .select()
+      .from(enrichmentLogs)
+      .where(eq(enrichmentLogs.leadId, leadId))
+
+    let totalCost = 0
+    const costByProvider: Record<string, { cost: number; operations: number }> = {}
+    let topOperation: { operation: string; cost: number } | null = null
+
+    logs.forEach(log => {
+      const cost = log.cost ? parseFloat(log.cost) : 0
+      totalCost += cost
+
+      // Track by provider
+      if (!costByProvider[log.provider]) {
+        costByProvider[log.provider] = { cost: 0, operations: 0 }
+      }
+      costByProvider[log.provider].cost += cost
+      costByProvider[log.provider].operations += 1
+
+      // Track top operation
+      if (!topOperation || cost > topOperation.cost) {
+        topOperation = { operation: log.operation, cost }
+      }
+    })
+
+    return {
+      totalCost: Math.round(totalCost * 10000) / 10000, // Round to 4 decimal places
+      operationsCount: logs.length,
+      costByProvider,
+      topOperation,
+    }
+  } catch (error) {
+    console.error('Failed to get enrichment cost summary:', error)
+    return {
+      totalCost: 0,
+      operationsCount: 0,
+      costByProvider: {},
+      topOperation: null,
+    }
+  }
+}
+
+/**
+ * Get real-time cost updates for ongoing enrichment
+ */
+export async function getRealtimeEnrichmentCosts(leadId: string): Promise<{
+  completedOperations: number
+  totalCompletedCost: number
+  pendingOperations: number
+  estimatedTotalCost: number
+}> {
+  try {
+    const logs = await db
+      .select()
+      .from(enrichmentLogs)
+      .where(eq(enrichmentLogs.leadId, leadId))
+
+    const completedLogs = logs.filter(log => log.status === 'success')
+    const pendingLogs = logs.filter(log => log.status === 'pending')
+    
+    const totalCompletedCost = completedLogs.reduce((sum, log) => {
+      return sum + (log.cost ? parseFloat(log.cost) : 0)
+    }, 0)
+
+    // Rough estimate for pending operations based on averages
+    const avgCostPerOperation = completedLogs.length > 0 
+      ? totalCompletedCost / completedLogs.length 
+      : 0.1 // Default estimate
+    
+    const estimatedPendingCost = pendingLogs.length * avgCostPerOperation
+    const estimatedTotalCost = totalCompletedCost + estimatedPendingCost
+
+    return {
+      completedOperations: completedLogs.length,
+      totalCompletedCost: Math.round(totalCompletedCost * 10000) / 10000,
+      pendingOperations: pendingLogs.length,
+      estimatedTotalCost: Math.round(estimatedTotalCost * 10000) / 10000,
+    }
+  } catch (error) {
+    console.error('Failed to get realtime enrichment costs:', error)
+    return {
+      completedOperations: 0,
+      totalCompletedCost: 0,
+      pendingOperations: 0,
+      estimatedTotalCost: 0,
+    }
+  }
+}
+
+/**
  * Utility function to wrap any AI tool with logging
  * Uses function composition pattern for clean integration
  */

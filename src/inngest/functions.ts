@@ -6,7 +6,10 @@ import { generateMockBehavioralData } from '@/lib/utils'
 import { determineRouting } from '@/lib/routing/router'
 import { logger } from '@/lib/logger'
 import { enrichLead } from '@/lib/enrichment/enrichment-engine'
-import { updateEnrichmentLogsWithIds } from '@/lib/enrichment-logger'
+import { 
+  updateEnrichmentLogsWithIds,
+  getEnrichmentCostSummary
+} from '@/lib/enrichment-logger'
 import type { EnrichmentInput } from '@/lib/schemas/enrichment'
 
 export const enrichLeadFunction = inngest.createFunction(
@@ -72,7 +75,19 @@ export const enrichLeadFunction = inngest.createFunction(
     const enrichmentResult = await step.run('call-enrichment-engine', async () => {
       console.log('=== CALL === enrichment engine directly...')
 
-      const result = await enrichLead(enrichmentInput)
+      // Log enrichment start with cost tracking info
+      logger.info(
+        `Starting AI enrichment for ${submission.companyWebsite}`,
+        {
+          submissionId,
+          companyWebsite: submission.companyWebsite,
+          contactName: submission.contactName,
+          costTracking: 'enabled'
+        },
+        sessionId
+      )
+
+      const result = await enrichLead(enrichmentInput, sessionId)
       console.log(
         `=== RESULT === enrichment completed: ${result.gatheringSteps} steps, ${result.toolCalls} tool calls`,
       )
@@ -176,8 +191,11 @@ export const enrichLeadFunction = inngest.createFunction(
       })
     })
 
-    // Log enrichment completion to UI console
-    await step.run('log-enrichment-completion', () => {
+    // Log enrichment completion with cost analysis
+    await step.run('log-enrichment-completion', async () => {
+      // Get cost summary for this enrichment
+      const costSummary = await getEnrichmentCostSummary(storageResult.leadId)
+      
       logger.success(
         `Lead enriched and classified as ${storageResult.classification}`,
         {
@@ -185,9 +203,39 @@ export const enrichLeadFunction = inngest.createFunction(
           score: storageResult.score,
           classification: storageResult.classification,
           contactName: submission.contactName,
+          costAnalysis: {
+            totalCost: `$${costSummary.totalCost.toFixed(4)}`,
+            operations: costSummary.operationsCount,
+            topExpense: costSummary.topOperation?.operation || 'unknown',
+            breakdown: Object.entries(costSummary.costByProvider).map(([provider, data]) => 
+              `${provider}: $${data.cost.toFixed(3)} (${data.operations} ops)`
+            ).join(', ')
+          }
         },
         sessionId
       )
+
+      // Additional cost-focused log
+      if (costSummary.totalCost > 0.5) {
+        logger.warn(
+          `High enrichment cost detected: $${costSummary.totalCost.toFixed(4)}`,
+          {
+            leadId: storageResult.leadId,
+            costBreakdown: costSummary.costByProvider,
+            recommendation: 'Consider cost optimization for similar leads'
+          },
+          sessionId
+        )
+      } else {
+        logger.info(
+          `Enrichment cost: $${costSummary.totalCost.toFixed(4)} across ${costSummary.operationsCount} operations`,
+          {
+            leadId: storageResult.leadId,
+            efficiency: costSummary.totalCost < 0.3 ? 'excellent' : 'good'
+          },
+          sessionId
+        )
+      }
     })
 
     // Trigger routing after enrichment completes
