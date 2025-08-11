@@ -1,6 +1,7 @@
 import { tool } from 'ai'
 import { z } from 'zod'
 import { exa } from '@/lib/exa'
+import { CostCalculators } from '@/lib/costs'
 
 const DESCRIPTION = `
 - Searches for company intelligence and recent signals using Exa API
@@ -44,7 +45,7 @@ export const companyIntelligence = tool({
         },
       })
 
-      return results.map((result) => ({
+      const mappedResults = results.map((result) => ({
         title: result.title,
         url: result.url,
         content: result.text?.slice(0, 800) || '',
@@ -52,6 +53,13 @@ export const companyIntelligence = tool({
         score: result.score,
         highlights: [],
       }))
+      
+      return {
+        results: mappedResults,
+        estimatedCost: CostCalculators.exa('search'),
+        searchCount: 1,
+        apiProvider: 'exa'
+      }
     } catch (error) {
       console.error('Company intelligence search failed:', error)
       return { error: 'Failed to fetch company intelligence', details: error }

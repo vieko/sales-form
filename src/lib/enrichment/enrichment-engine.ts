@@ -7,10 +7,18 @@ import {
   competitiveIntelligence,
   intentAnalysis,
   websiteAnalysis,
-} from '@/lib/tools'
+} from '@/lib/tools/instrumented'
 // Using Vercel AI Gateway - no provider imports needed
 import { generateObject, generateText, stepCountIs } from 'ai'
 import type { EnrichmentInput } from '@/lib/schemas/enrichment'
+import { 
+  setEnrichmentContext, 
+  clearEnrichmentContext,
+  startEnrichmentLog,
+  completeEnrichmentLog,
+  failEnrichmentLog
+} from '@/lib/enrichment-logger'
+import { CostCalculators } from '@/lib/costs'
 
 const DATA_GATHERING_PROMPT = `
 You are an expert lead enrichment researcher. Your job is to intelligently gather data about a company and lead using the available tools.
@@ -52,6 +60,12 @@ Analyze the provided tool results and original lead data to create accurate, com
 export async function enrichLead(input: EnrichmentInput) {
   const validatedInput = enrichmentInputSchema.parse(input)
 
+  // Set enrichment context for logging
+  setEnrichmentContext({
+    leadId: validatedInput.leadId,
+    companyId: validatedInput.companyId,
+  })
+
   const domain = new URL(validatedInput.companyWebsite).hostname.replace(
     'www.',
     '',
@@ -83,27 +97,48 @@ TASK: Gather comprehensive data about this lead using the available tools. Be st
 
   console.log('=== STEP 1 === Gathering enrichment data with tools...')
 
-  const dataGathering = await generateText({
-    model: 'openai/gpt-4o',
-    system: DATA_GATHERING_PROMPT,
-    prompt: leadContext,
-    tools: {
-      companyIntelligence,
-      websiteAnalysis,
-      competitiveIntelligence,
-      intentAnalysis,
-    },
-    toolChoice: 'auto',
-    stopWhen: stepCountIs(6), // Reasonable limit for data gathering
+  // Log the main data gathering operation
+  const dataGatheringLogId = await startEnrichmentLog({
+    leadId: validatedInput.leadId,
+    companyId: validatedInput.companyId,
+    provider: 'openai',
+    operation: 'data-gathering',
+    requestData: { leadContext, tools: ['companyIntelligence', 'websiteAnalysis', 'competitiveIntelligence', 'intentAnalysis'] },
   })
 
-  console.log(
-    `=== STEP 1 === completed: ${dataGathering.steps.length} steps, ${dataGathering.toolCalls.length} tool calls`,
-  )
+  try {
+    const dataGathering = await generateText({
+      model: 'openai/gpt-4o',
+      system: DATA_GATHERING_PROMPT,
+      prompt: leadContext,
+      tools: {
+        companyIntelligence,
+        websiteAnalysis,
+        competitiveIntelligence,
+        intentAnalysis,
+      },
+      toolChoice: 'auto',
+      stopWhen: stepCountIs(6), // Reasonable limit for data gathering
+    })
 
-  console.log('=== STEP 2 === Synthesizing enrichment data...')
+    await completeEnrichmentLog({
+      logId: dataGatheringLogId,
+      responseData: {
+        steps: dataGathering.steps.length,
+        toolCalls: dataGathering.toolCalls.length,
+        text: dataGathering.text.slice(0, 500) + '...',
+      },
+      tokensUsed: dataGathering.usage?.totalTokens,
+      cost: dataGathering.usage?.totalTokens ? CostCalculators.openai(dataGathering.usage.totalTokens) : undefined,
+    })
 
-  const synthesisPrompt = `
+    console.log(
+      `=== STEP 1 === completed: ${dataGathering.steps.length} steps, ${dataGathering.toolCalls.length} tool calls`,
+    )
+
+    console.log('=== STEP 2 === Synthesizing enrichment data...')
+
+    const synthesisPrompt = `
 ORIGINAL LEAD DATA:
 ${leadContext}
 
@@ -117,22 +152,62 @@ SYNTHESIS TASK:
 Based on the original lead data and the gathered tool results above, create comprehensive lead enrichment with accurate scoring and classification. Use the actual data from the tool results to inform your analysis, not assumptions.
 `
 
-  const enrichmentResult = await generateObject({
-    model: 'openai/gpt-4o',
-    system: SYNTHESIS_PROMPT,
-    prompt: synthesisPrompt,
-    schema: enrichmentResponseSchema,
-    temperature: 0.2, // For consistency
-  })
+    // Log the synthesis operation
+    const synthesisLogId = await startEnrichmentLog({
+      leadId: validatedInput.leadId,
+      companyId: validatedInput.companyId,
+      provider: 'openai',
+      operation: 'enrichment-synthesis',
+      requestData: { synthesisPrompt: synthesisPrompt.slice(0, 500) + '...' },
+    })
 
-  console.log('=== STEP 2 === Enrichment synthesis completed')
+    try {
+      const enrichmentResult = await generateObject({
+        model: 'openai/gpt-4o',
+        system: SYNTHESIS_PROMPT,
+        prompt: synthesisPrompt,
+        schema: enrichmentResponseSchema,
+        temperature: 0.2, // For consistency
+      })
 
-  return {
-    success: true,
-    data: enrichmentResult.object,
-    domain,
-    gatheringSteps: dataGathering.steps.length,
-    toolCalls: dataGathering.toolCalls.length,
-    gatheringSummary: dataGathering.text.slice(0, 200) + '...',
+      await completeEnrichmentLog({
+        logId: synthesisLogId,
+        responseData: {
+          classification: enrichmentResult.object.scoring.classification,
+          overallScore: enrichmentResult.object.scoring.overallScore,
+        },
+        tokensUsed: enrichmentResult.usage?.totalTokens,
+        cost: enrichmentResult.usage?.totalTokens ? CostCalculators.openai(enrichmentResult.usage.totalTokens) : undefined,
+      })
+
+      console.log('=== STEP 2 === Enrichment synthesis completed')
+
+      // Clear context at the end
+      clearEnrichmentContext()
+
+      return {
+        success: true,
+        data: enrichmentResult.object,
+        domain,
+        gatheringSteps: dataGathering.steps.length,
+        toolCalls: dataGathering.toolCalls.length,
+        gatheringSummary: dataGathering.text.slice(0, 200) + '...',
+      }
+    } catch (synthesisError) {
+      await failEnrichmentLog({
+        logId: synthesisLogId,
+        errorMessage: synthesisError instanceof Error ? synthesisError.message : String(synthesisError),
+      })
+      throw synthesisError
+    }
+  } catch (dataGatheringError) {
+    await failEnrichmentLog({
+      logId: dataGatheringLogId,
+      errorMessage: dataGatheringError instanceof Error ? dataGatheringError.message : String(dataGatheringError),
+    })
+    
+    // Clear context on error
+    clearEnrichmentContext()
+    throw dataGatheringError
   }
 }

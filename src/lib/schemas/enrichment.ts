@@ -180,6 +180,10 @@ export const enrichmentResponseSchema = z.object({
 })
 
 export const enrichmentInputSchema = z.object({
+  // IDs for logging context
+  leadId: z.string().optional().describe('Lead ID for tracking'),
+  companyId: z.string().optional().describe('Company ID for tracking'),
+  
   contactName: z.string().describe('Contact person name'),
   companyEmail: z.email().describe('Company email'),
   companyWebsite: z.url().describe('Company website'),

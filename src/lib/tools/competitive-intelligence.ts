@@ -48,6 +48,7 @@ export const competitiveIntelligence = tool({
         analysis: result.text,
         searchQuery,
         lastUpdated: new Date().toISOString(),
+        usage: result.usage, // Include usage data for logging
       }
     } catch (error) {
       console.error('Perplexity competitive intelligence failed:', error)

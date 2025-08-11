@@ -6,6 +6,7 @@ import { generateMockBehavioralData } from '@/lib/utils'
 import { determineRouting } from '@/lib/routing/router'
 import { logger } from '@/lib/logger'
 import { enrichLead } from '@/lib/enrichment/enrichment-engine'
+import { updateEnrichmentLogsWithIds } from '@/lib/enrichment-logger'
 import type { EnrichmentInput } from '@/lib/schemas/enrichment'
 
 export const enrichLeadFunction = inngest.createFunction(
@@ -51,6 +52,8 @@ export const enrichLeadFunction = inngest.createFunction(
       'prepare-enrichment-input',
       async () => {
         const input: EnrichmentInput = {
+          // Use submissionId as leadId for now - we'll update with actual leadId later
+          leadId: submissionId,
           contactName: submission.contactName,
           companyEmail: submission.companyEmail,
           companyWebsite: submission.companyWebsite,
@@ -163,6 +166,15 @@ export const enrichLeadFunction = inngest.createFunction(
         }
       },
     )
+
+    // Update enrichment logs with final IDs
+    await step.run('update-enrichment-logs', async () => {
+      await updateEnrichmentLogsWithIds({
+        submissionId,
+        leadId: storageResult.leadId,
+        companyId: storageResult.companyId,
+      })
+    })
 
     // Log enrichment completion to UI console
     await step.run('log-enrichment-completion', () => {
