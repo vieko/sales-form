@@ -66,4 +66,4 @@ Weighted scoring algorithm (0-100 points):
 
 - [Build An Agent in 10 mins with AI SDK 5 with Nico Albanese from Vercel, AI Demo Days](https://www.youtube.com/watch?v=TjAbtsPC-Sw)
 
-[screenshots/2025-08-11_08-11-22_screenshot.png]
+[https://github.com/vieko/sales-form/blob/e58c1ce1ad8517f8845f7eff1f43187736fed269/screenshots/2025-08-11_08-11-22_screenshot.png]
