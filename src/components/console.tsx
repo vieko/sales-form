@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Trash2 } from 'lucide-react'
-import { logger, LogEntry, LogLevel } from '@/lib/logger'
+import { LogEntry, LogLevel } from '@/lib/client-logger'
 
 const getLevelColor = (level: LogLevel) => {
   switch (level) {
@@ -23,92 +23,76 @@ const getLevelColor = (level: LogLevel) => {
 
 export function Console() {
   const [logs, setLogs] = useState<LogEntry[]>([])
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
+  // Initialize session ID
   useEffect(() => {
-    // Subscribe to client-side logs
-    setLogs(logger.getLogs())
-    const unsubscribe = logger.subscribe(setLogs)
+    const id = sessionStorage.getItem('sessionId') || 
+      (() => {
+        const newId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        sessionStorage.setItem('sessionId', newId)
+        return newId
+      })()
+    setSessionId(id)
+  }, [])
 
-    // Set up Server-Sent Events for real-time server logs
-    let eventSource: EventSource | null = null
-
+  // Fetch logs from API
+  const fetchLogs = useCallback(async () => {
+    if (!sessionId) return
+    
     try {
-      // Generate a session ID for this browser session
-      const sessionId = sessionStorage.getItem('sessionId') || 
-        (() => {
-          const id = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-          sessionStorage.setItem('sessionId', id)
-          return id
-        })()
+      setIsLoading(true)
+      const response = await fetch(`/api/console?sessionId=${sessionId}`)
       
-      eventSource = new EventSource(`/api/console/stream?sessionId=${sessionId}`)
-
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data)
-          console.log('SSE data received:', data)
-
-          switch (data.type) {
-            case 'initial':
-            case 'update':
-              if (data.logs) {
-                console.log('Processing logs:', data.logs.length, 'logs')
-                setLogs((prevLogs) => {
-                  console.log('Previous logs count:', prevLogs.length)
-                  // Merge server logs with client logs, avoiding duplicates
-                  const existingIds = new Set(prevLogs.map((log) => log.id))
-                  const newLogs = data.logs
-                    .filter((log: LogEntry) => !existingIds.has(log.id))
-                    .map((log: LogEntry) => ({
-                      ...log,
-                      // Convert timestamp string back to Date object
-                      timestamp: new Date(log.timestamp),
-                    }))
-                  console.log('New logs to add:', newLogs.length)
-                  const merged = [...prevLogs, ...newLogs].sort((a, b) => 
-                    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-                  )
-                  console.log('Final logs count:', merged.length)
-                  return merged
-                })
-              } else {
-                console.log('No logs in SSE data')
-              }
-              break
-            case 'heartbeat':
-              // Keep connection alive, no action needed
-              break
-          }
-        } catch (error) {
-          console.error('Failed to parse SSE data:', error)
-        }
+      if (!response.ok) {
+        console.error('Failed to fetch logs:', response.statusText)
+        return
       }
+      
+      const data = await response.json()
+      setLogs(data.logs.map((log: any) => ({
+        ...log,
+        timestamp: new Date(log.timestamp),
+      })))
+    } catch (error) {
+      console.error('Failed to fetch logs:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [sessionId])
 
-      eventSource.onerror = (error) => {
-        console.error('SSE connection error:', error)
-        // Automatically reconnect after 5 seconds
-        setTimeout(() => {
-          if (eventSource?.readyState === EventSource.CLOSED) {
-            eventSource.close()
-            // Connection will restart on next render
-          }
-        }, 5000)
-      }
+  // Poll for logs
+  useEffect(() => {
+    if (!sessionId) return
+    
+    // Initial fetch
+    fetchLogs()
+    
+    // Set up polling every 2 seconds
+    const interval = setInterval(fetchLogs, 2000)
+    
+    return () => clearInterval(interval)
+  }, [sessionId, fetchLogs])
 
-      eventSource.onopen = () => {
-        console.log('SSE connection established')
+  // Clear logs
+  const clearLogs = useCallback(async () => {
+    if (!sessionId) return
+    
+    try {
+      const response = await fetch(`/api/console?sessionId=${sessionId}`, {
+        method: 'DELETE',
+      })
+      
+      if (response.ok) {
+        setLogs([])
+      } else {
+        console.error('Failed to clear logs:', response.statusText)
       }
     } catch (error) {
-      console.error('Failed to establish SSE connection:', error)
+      console.error('Failed to clear logs:', error)
     }
-
-    return () => {
-      unsubscribe()
-      if (eventSource) {
-        eventSource.close()
-      }
-    }
-  }, [])
+  }, [sessionId])
 
   const formatTime = (timestamp: Date | string) => {
     const date = timestamp instanceof Date ? timestamp : new Date(timestamp)
@@ -129,8 +113,9 @@ export function Console() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => logger.clear()}
+          onClick={clearLogs}
           className="h-8 w-8 p-0"
+          disabled={!sessionId}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -140,7 +125,7 @@ export function Console() {
           <div className="space-y-4 p-4">
             {logs.length === 0 ? (
               <p className="text-muted-foreground/40 pl-2 text-xs">
-                waiting for logs...
+                {isLoading ? 'loading logs...' : 'no logs yet...'}
               </p>
             ) : (
               logs.map((log) => (

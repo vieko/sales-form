@@ -50,6 +50,13 @@
       "when": 1754642473181,
       "tag": "0006_lying_shadowcat",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1754882823912,
+      "tag": "0007_soft_firebrand",
+      "breakpoints": true
     }
   ]
 }

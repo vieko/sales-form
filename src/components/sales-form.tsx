@@ -41,7 +41,7 @@ import { Textarea } from '@/components/ui/textarea'
 
 import { submitContact } from '@/actions/contact'
 import { countries } from '@/lib/countries'
-import { logger } from '@/lib/logger'
+import { logger } from '@/lib/client-logger'
 import { products } from '@/lib/products'
 import { sizes } from '@/lib/sizes'
 import { contactSchema, type ContactValues } from '@/lib/validations/contact'

@@ -1,73 +1,16 @@
-import { NextRequest } from 'next/server'
-import { logger } from '@/lib/logger'
+// This file is deprecated - SSE has been replaced with simple polling
+// Keeping it for compatibility but it should not be used
+
+import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
-  const encoder = new TextEncoder()
-  let controller: ReadableStreamDefaultController<Uint8Array>
-  
-  const url = new URL(request.url)
-  const sessionId = url.searchParams.get('sessionId')
-  if (!sessionId) {
-    return new Response('Session ID required', { status: 400 })
-  }
-
-  const stream = new ReadableStream({
-    start(ctrl) {
-      controller = ctrl
-
-      const initialLogs = logger.getLogs(sessionId)
-      if (initialLogs.length > 0) {
-        const data = `data: ${JSON.stringify({ type: 'initial', logs: initialLogs })}\n\n`
-        controller.enqueue(encoder.encode(data))
-      }
-
-      const unsubscribe = logger.subscribe((logs) => {
-        try {
-          const data = `data: ${JSON.stringify({ type: 'update', logs })}\n\n`
-          controller.enqueue(encoder.encode(data))
-        } catch (error) {
-          console.error('SSE error:', error)
-        }
-      }, sessionId)
-
-      const heartbeat = setInterval(() => {
-        try {
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({ type: 'heartbeat' })}\n\n`,
-            ),
-          )
-        } catch (error) {
-          console.error('Heartbeat error:', error)
-          clearInterval(heartbeat)
-        }
-      }, 30000) // 30 seconds
-
-      request.signal.addEventListener('abort', () => {
-        unsubscribe()
-        clearInterval(heartbeat)
-        try {
-          controller.close()
-        } catch {
-          // Connection already closed
-        }
-      })
+export async function GET() {
+  return NextResponse.json(
+    { 
+      error: 'SSE endpoint deprecated',
+      message: 'Use GET /api/console with polling instead' 
     },
-
-    cancel() {
-      // Stream cancelled by client
-    },
-  })
-
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-transform',
-      Connection: 'keep-alive',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Cache-Control',
-    },
-  })
+    { status: 410 }
+  )
 }
