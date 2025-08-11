@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Trash2 } from 'lucide-react'
-import { LogEntry, LogLevel } from '@/lib/client-logger'
+import { LogEntry, LogLevel } from '@/lib/logger'
+import { getLogs, clearLogs } from '@/actions/logging'
 
 const getLevelColor = (level: LogLevel) => {
   switch (level) {
@@ -24,7 +25,6 @@ const getLevelColor = (level: LogLevel) => {
 export function Console() {
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [sessionId, setSessionId] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
 
   // Initialize session ID
   useEffect(() => {
@@ -37,28 +37,15 @@ export function Console() {
     setSessionId(id)
   }, [])
 
-  // Fetch logs from API
+  // Fetch logs using server action
   const fetchLogs = useCallback(async () => {
     if (!sessionId) return
     
     try {
-      setIsLoading(true)
-      const response = await fetch(`/api/console?sessionId=${sessionId}`)
-      
-      if (!response.ok) {
-        console.error('Failed to fetch logs:', response.statusText)
-        return
-      }
-      
-      const data = await response.json()
-      setLogs(data.logs.map((log: any) => ({
-        ...log,
-        timestamp: new Date(log.timestamp),
-      })))
+      const logs = await getLogs(sessionId)
+      setLogs(logs)
     } catch (error) {
       console.error('Failed to fetch logs:', error)
-    } finally {
-      setIsLoading(false)
     }
   }, [sessionId])
 
@@ -75,19 +62,16 @@ export function Console() {
     return () => clearInterval(interval)
   }, [sessionId, fetchLogs])
 
-  // Clear logs
-  const clearLogs = useCallback(async () => {
+  // Clear logs using server action
+  const clearLogsHandler = useCallback(async () => {
     if (!sessionId) return
     
     try {
-      const response = await fetch(`/api/console?sessionId=${sessionId}`, {
-        method: 'DELETE',
-      })
-      
-      if (response.ok) {
+      const result = await clearLogs(sessionId)
+      if (result.success) {
         setLogs([])
       } else {
-        console.error('Failed to clear logs:', response.statusText)
+        console.error('Failed to clear logs:', result.error)
       }
     } catch (error) {
       console.error('Failed to clear logs:', error)
@@ -113,7 +97,7 @@ export function Console() {
         <Button
           variant="outline"
           size="sm"
-          onClick={clearLogs}
+          onClick={clearLogsHandler}
           className="h-8 w-8 p-0"
           disabled={!sessionId}
         >
@@ -124,9 +108,9 @@ export function Console() {
         <ScrollArea className="h-full max-h-[80vh]">
           <div className="space-y-4 p-4">
             {logs.length === 0 ? (
-              <p className="text-muted-foreground/40 pl-2 text-xs">
-                {isLoading ? 'loading logs...' : 'no logs yet...'}
-              </p>
+              <div className="text-muted-foreground/30 pl-2 text-xs italic">
+                console ready
+              </div>
             ) : (
               logs.map((log) => (
                 <div
@@ -145,9 +129,9 @@ export function Console() {
                     </Badge>
                   </div>
                   <p className="text-muted-foreground mb-1">{log.message}</p>
-                  {log.data !== undefined && (
+                  {log.data !== undefined && log.data !== null && (
                     <pre className="text-muted-foreground/60 bg-muted/50 overflow-x-auto rounded p-2 text-xs">
-                      {String(JSON.stringify(log.data, null, 2) || 'undefined')}
+                      {String(JSON.stringify(log.data, null, 2))}
                     </pre>
                   )}
                 </div>

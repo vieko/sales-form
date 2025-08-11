@@ -4,7 +4,7 @@ import { submissions, leads, companies } from '@/db/schemas'
 import { eq } from 'drizzle-orm'
 import { generateMockBehavioralData } from '@/lib/utils'
 import { determineRouting } from '@/lib/routing/router'
-import { serverLogger } from '@/lib/server-logger'
+import { logger } from '@/lib/logger'
 import { enrichLead } from '@/lib/enrichment/enrichment-engine'
 import type { EnrichmentInput } from '@/lib/schemas/enrichment'
 
@@ -17,6 +17,8 @@ export const enrichLeadFunction = inngest.createFunction(
     // Handle both normal events and re-run events (where data is nested)
     const submissionId =
       event.data.submissionId || event.data.data?.submissionId
+    const sessionId = 
+      event.data.sessionId || event.data.data?.sessionId
 
     if (!submissionId) {
       console.error(
@@ -164,7 +166,7 @@ export const enrichLeadFunction = inngest.createFunction(
 
     // Log enrichment completion to UI console
     await step.run('log-enrichment-completion', () => {
-      serverLogger.success(
+      logger.success(
         `Lead enriched and classified as ${storageResult.classification}`,
         {
           leadId: storageResult.leadId,
@@ -172,6 +174,7 @@ export const enrichLeadFunction = inngest.createFunction(
           classification: storageResult.classification,
           contactName: submission.contactName,
         },
+        sessionId
       )
     })
 
@@ -183,6 +186,7 @@ export const enrichLeadFunction = inngest.createFunction(
         classification: storageResult.classification,
         score: storageResult.score,
         contactName: submission.contactName,
+        sessionId: sessionId,
       },
     })
 
@@ -200,7 +204,7 @@ export const routeLead = inngest.createFunction(
   { id: 'route-lead', name: 'Route Classified Lead' },
   { event: 'lead/enriched' },
   async ({ event, step }) => {
-    const { leadId, classification, score, contactName } = event.data
+    const { leadId, classification, score, contactName, sessionId } = event.data
 
     const routingDecision = await step.run('determine-routing', async () => {
       return determineRouting(classification, score, contactName)
@@ -221,13 +225,13 @@ export const routeLead = inngest.createFunction(
         console.log(`=== ROUTING === ${routingDecision.message}`)
 
         // Log to UI console
-        serverLogger.success(routingDecision.message, {
+        logger.success(routingDecision.message, {
           leadId,
           classification,
           score,
           action: routingDecision.action,
           priority: routingDecision.priority,
-        })
+        }, sessionId)
 
         return {
           success: true,
@@ -280,12 +284,13 @@ export const routeLead = inngest.createFunction(
       }
 
       // Log to UI console
-      serverLogger.info(
+      logger.info(
         `Triggered ${notificationDetails.length} ${routingDecision.action} actions`,
         {
           actions: notificationDetails,
           priority: routingDecision.priority,
         },
+        sessionId
       )
 
       return { notificationsSent: true }

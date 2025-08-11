@@ -8,7 +8,7 @@ import { headers } from 'next/headers'
 import { z } from 'zod'
 import { inngest } from '@/inngest/client'
 import { formDataToObject } from '@/lib/utils'
-import { serverLogger } from '@/lib/server-logger'
+import { logger } from '@/lib/logger'
 
 export async function submitContact(
   prevState: ActionResponse,
@@ -16,6 +16,7 @@ export async function submitContact(
 ): Promise<ActionResponse> {
   try {
     const rawData = formDataToObject(formData)
+    const sessionId = formData.get('sessionId') as string
     const validatedData = contactSchema.safeParse(rawData)
 
     if (!validatedData.success) {
@@ -51,7 +52,7 @@ export async function submitContact(
     }
 
     // Log form submission to console
-    serverLogger.info(
+    logger.info(
       `New form submission received from ${validatedData.data.contactName}`,
       {
         submissionId: submission.id,
@@ -60,26 +61,30 @@ export async function submitContact(
         productInterest: validatedData.data.productInterest,
         country: validatedData.data.country,
       },
+      sessionId
     )
 
     // ==> trigger lead enrichment via Inngest
     await inngest
       .send({
         name: 'lead/submitted',
-        data: { submissionId: submission.id },
+        data: { 
+          submissionId: submission.id,
+          sessionId: sessionId 
+        },
       })
       .then(() => {
-        serverLogger.info('Lead enrichment pipeline started', {
+        logger.info('Lead enrichment pipeline started', {
           submissionId: submission.id,
           pipeline: 'AI enrichment → scoring → classification → routing',
-        })
+        }, sessionId)
       })
       .catch((error) => {
         console.error('Failed to queue enrichment:', error)
-        serverLogger.error('Failed to start enrichment pipeline', {
+        logger.error('Failed to start enrichment pipeline', {
           submissionId: submission.id,
           error: error.message,
-        })
+        }, sessionId)
       })
 
     return {

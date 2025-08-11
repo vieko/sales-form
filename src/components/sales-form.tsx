@@ -41,7 +41,7 @@ import { Textarea } from '@/components/ui/textarea'
 
 import { submitContact } from '@/actions/contact'
 import { countries } from '@/lib/countries'
-import { logger } from '@/lib/client-logger'
+import { logger } from '@/lib/logger'
 import { products } from '@/lib/products'
 import { sizes } from '@/lib/sizes'
 import { contactSchema, type ContactValues } from '@/lib/validations/contact'
@@ -135,6 +135,15 @@ export function SalesForm() {
     formData.append('how-can-we-help', data.howCanWeHelp)
     formData.append('privacy-policy', data.privacyPolicy ? 'on' : '')
     formData.append('mock-behavioral-data', data.mockBehavioralData ? 'on' : '')
+    
+    // Add session ID for server-side logging
+    const sessionId = sessionStorage.getItem('sessionId') || 
+      (() => {
+        const id = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        sessionStorage.setItem('sessionId', id)
+        return id
+      })()
+    formData.append('sessionId', sessionId)
 
     logger.info('Submitting form to server...')
 

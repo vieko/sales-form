@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { logger } from '@/lib/server-logger-db'
+import { getLogs, clearLogs, addLog } from '@/actions/logging'
 
 export const dynamic = 'force-dynamic'
 
-// GET: Get logs for a session
+// GET: Get logs for a session (fallback for non-action clients)
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       )
     }
     
-    const logs = await logger.getLogs(sessionId, limit)
+    const logs = await getLogs(sessionId, limit)
     return NextResponse.json({ logs })
   } catch (error) {
     console.error('Console API error:', error)
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// DELETE: Clear all logs for a session
+// DELETE: Clear all logs for a session (fallback for non-action clients)
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -41,8 +41,15 @@ export async function DELETE(request: NextRequest) {
       )
     }
     
-    await logger.clear(sessionId)
-    return NextResponse.json({ success: true, message: 'Console cleared' })
+    const result = await clearLogs(sessionId)
+    if (result.success) {
+      return NextResponse.json({ success: true, message: 'Console cleared' })
+    } else {
+      return NextResponse.json(
+        { error: result.error },
+        { status: 500 }
+      )
+    }
   } catch (error) {
     console.error('Console clear error:', error)
     return NextResponse.json(
@@ -52,7 +59,7 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-// POST: Add log entry (for manual logging)
+// POST: Add log entry (fallback for non-action clients)
 export async function POST(request: NextRequest) {
   try {
     const { level, message, data, sessionId } = await request.json()
@@ -72,9 +79,15 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    await logger[level as keyof typeof logger](message, data, sessionId)
-    
-    return NextResponse.json({ success: true })
+    const result = await addLog(sessionId, level, message, data)
+    if (result.success) {
+      return NextResponse.json({ success: true })
+    } else {
+      return NextResponse.json(
+        { error: result.error },
+        { status: 500 }
+      )
+    }
   } catch (error) {
     console.error('Console API error:', error)
     return NextResponse.json(
