@@ -13,8 +13,11 @@ import {
 import type { EnrichmentInput } from '@/lib/schemas/enrichment'
 
 export const enrichLeadFunction = inngest.createFunction(
-  { id: 'enrich-lead', name: 'Enrich Lead Submission' },
-  { event: 'lead/submitted' },
+  {
+    id: 'enrich-lead',
+    name: 'Enrich Lead Submission',
+    triggers: [{ event: 'lead/submitted' }],
+  },
   async ({ event, step }) => {
     console.log('=== EVENT DATA ===', JSON.stringify(event.data, null, 2))
 
@@ -261,8 +264,11 @@ export const enrichLeadFunction = inngest.createFunction(
 )
 
 export const routeLead = inngest.createFunction(
-  { id: 'route-lead', name: 'Route Classified Lead' },
-  { event: 'lead/enriched' },
+  {
+    id: 'route-lead',
+    name: 'Route Classified Lead',
+    triggers: [{ event: 'lead/enriched' }],
+  },
   async ({ event, step }) => {
     const { leadId, classification, score, contactName, sessionId } = event.data
 
